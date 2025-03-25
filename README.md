@@ -16,6 +16,59 @@ Visit our live demo at: [ToxidAPI Demo](https://gdg2025.vercel.app/)
 - **Progress Bars**: Visual representation of toxicity and sentiment scores
 - **Comprehensive Results**: Detailed breakdown of analysis including processing time
 
+## Prerequisites
+
+Before getting started, ensure you have the following installed:
+
+- [Python 3.9+](https://www.python.org/downloads/) - Used for the FastAPI backend
+- [pip](https://pip.pypa.io/en/stable/installation/) - Python package installer
+- [Git](https://git-scm.com/downloads) - For cloning the repository
+- [Vercel CLI](https://vercel.com/docs/cli) (Optional) - For deployment to Vercel
+- [Google Gemini API Key](https://aistudio.google.com/app/apikey) - Required for text analysis
+
+## Installation and Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/sanjanatg/toxidapi.git
+   cd toxidapi
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   # On Windows
+   python -m venv venv
+   venv\Scripts\activate
+
+   # On macOS/Linux
+   python -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   
+   Create a `.env` file in the project root:
+   ```
+   GEMINI_API_KEY=your_api_key_here
+   ```
+   
+   You can obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+5. **Run the development server**:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+6. **Access the application**:
+   - UI Demo: [http://localhost:8000](http://localhost:8000)
+   - API Documentation: [http://localhost:8000/api](http://localhost:8000/api)
+   - ReDoc: [http://localhost:8000/docs](http://localhost:8000/docs)
+
 ## API Documentation
 
 - [Swagger UI](/api) - Interactive API documentation
@@ -24,10 +77,10 @@ Visit our live demo at: [ToxidAPI Demo](https://gdg2025.vercel.app/)
 
 ## Tech Stack
 
-- **Backend**: FastAPI (Python 3.8+)
-- **AI Model**: Google Gemini AI
+- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.9+)
+- **AI Model**: [Google Gemini AI](https://ai.google.dev/)
 - **Frontend**: Vanilla JavaScript with modern CSS
-- **Deployment**: Vercel
+- **Deployment**: [Vercel](https://vercel.com/)
 - **Documentation**: OpenAPI (Swagger) & ReDoc
 
 ## Project Structure
@@ -50,7 +103,7 @@ toxidapi/
 ### Analyze Text
 
 ```bash
-curl -X POST "https://your-deployment-url/api/analyze" \
+curl -X POST "https://gdg2025.vercel.app/api/analyze" \
      -H "Content-Type: application/json" \
      -d '{"text": "Your text here"}'
 ```
@@ -89,44 +142,43 @@ curl -X POST "https://your-deployment-url/api/analyze" \
 }
 ```
 
+## Deployment to Vercel
+
+1. **Install Vercel CLI** (if not already installed):
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Log in to Vercel**:
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy to Vercel**:
+   ```bash
+   vercel
+   ```
+
+4. **Set environment variables**:
+   
+   After deployment, set up your `GEMINI_API_KEY` on the Vercel dashboard:
+   - Go to your project on the [Vercel Dashboard](https://vercel.com/dashboard)
+   - Navigate to Settings > Environment Variables
+   - Add `GEMINI_API_KEY` with your Google Gemini API key
+
+5. **Deploy to production**:
+   ```bash
+   vercel --prod
+   ```
+
 ## Local Development
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/your-username/toxidapi.git
-   cd toxidapi
-   ```
-
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   Create a `.env` file with:
-   ```
-   GEMINI_API_KEY=your_api_key_here
-   ```
-
-5. Run the development server:
+1. Run the development server:
    ```bash
    uvicorn app.main:app --reload
    ```
 
-6. Visit `http://localhost:8000` in your browser
-
-## Deployment
-
-This project is configured for deployment on Vercel. Simply push to your repository and connect it to Vercel.
-
-Make sure to set the following environment variables in your Vercel project:
-- `GEMINI_API_KEY`: Your Google Gemini AI API key
+2. Visit `http://localhost:8000` in your browser
 
 ## Contributing
 
@@ -142,6 +194,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Google Gemini AI for the powerful text analysis capabilities
-- FastAPI for the efficient API framework
-- Vercel for hosting and deployment
+- [Google Gemini AI](https://ai.google.dev/) for the powerful text analysis capabilities
+- [FastAPI](https://fastapi.tiangolo.com/) for the efficient API framework
+- [Vercel](https://vercel.com/) for hosting and deployment
