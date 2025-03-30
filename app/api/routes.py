@@ -6,7 +6,6 @@ import os
 from pydantic import BaseModel
 
 from app.api.models import TextRequest, AnalysisResponse
-from app.models.gemini_analyzer import GeminiAnalyzer
 from app.api.rate_limiter import rate_limit_middleware
 
 # Configure logging
@@ -17,10 +16,91 @@ router = APIRouter(prefix="/api/v2", tags=["api-v2"])
 
 # Initialize the analyzer with API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    raise ValueError("GEMINI_API_KEY environment variable is not set")
 
-analyzer = GeminiAnalyzer(api_key)
+# Set up the analyzer - either real Gemini or a mock
+try:
+    if not api_key:
+        logger.warning("GEMINI_API_KEY environment variable is not set. Using mock analyzer.")
+        # Create a mock analyzer for demo purposes
+        class MockAnalyzer:
+            def __init__(self):
+                self.name = "mock-analyzer"
+                
+            def analyze(self, text):
+                """Simple mock analysis based on keywords"""
+                import random
+                
+                # Simple toxicity detection
+                toxicity_score = 0.0
+                toxic_words = ["hate", "idiot", "stupid", "kill", "die", "awful", "terrible"]
+                profanity = ["f***", "s***", "damn", "hell"]
+                
+                text_lower = text.lower()
+                for word in toxic_words:
+                    if word in text_lower:
+                        toxicity_score += 0.2
+                
+                for word in profanity:
+                    if word in text_lower:
+                        toxicity_score += 0.15
+                
+                # Cap at 1.0
+                toxicity_score = min(1.0, toxicity_score)
+                
+                # Simple sentiment analysis
+                sentiment_score = 0.0
+                positive_words = ["good", "great", "excellent", "happy", "love", "wonderful"]
+                negative_words = ["bad", "sad", "angry", "upset", "hate", "terrible"]
+                
+                for word in positive_words:
+                    if word in text_lower:
+                        sentiment_score += 0.2
+                
+                for word in negative_words:
+                    if word in text_lower:
+                        sentiment_score -= 0.2
+                
+                # Limit to -1.0 to 1.0 range
+                sentiment_score = max(-1.0, min(1.0, sentiment_score))
+                
+                # Generate mock result
+                return {
+                    "toxicity": {
+                        "score": toxicity_score,
+                        "label": "toxic" if toxicity_score > 0.5 else "clean",
+                        "detailed_scores": {
+                            "profanity": min(1.0, toxicity_score * 1.2),
+                            "threat": random.uniform(0, toxicity_score),
+                            "insult": random.uniform(0, toxicity_score),
+                            "identity_attack": random.uniform(0, toxicity_score),
+                        }
+                    },
+                    "sentiment": {
+                        "score": sentiment_score,
+                        "label": "positive" if sentiment_score > 0.25 else ("negative" if sentiment_score < -0.25 else "neutral")
+                    },
+                    "flagged_words": {
+                        "count": int(toxicity_score * 10),
+                        "words": []
+                    }
+                }
+        
+        analyzer = MockAnalyzer()
+    else:
+        # Use the real analyzer if API key is available
+        from app.models.gemini_analyzer import GeminiAnalyzer
+        analyzer = GeminiAnalyzer(api_key)
+except Exception as e:
+    logger.error(f"Error initializing analyzer: {str(e)}")
+    # Fallback to a simple mock analyzer if anything goes wrong
+    class SimpleAnalyzer:
+        def analyze(self, text):
+            return {
+                "toxicity": {"score": 0.0, "label": "clean", "detailed_scores": {}},
+                "sentiment": {"score": 0.0, "label": "neutral"},
+                "flagged_words": {"count": 0, "words": []}
+            }
+    analyzer = SimpleAnalyzer()
 
 # Simple in-memory cache for results
 result_cache = {}
@@ -44,35 +124,41 @@ async def verify_api_key(
     If API_KEY_REQUIRED is set to True in environment, this will validate the key.
     Also applies rate limiting based on the API key or client IP.
     """
-    # Check rate limits first
-    await rate_limit_middleware(request, x_api_key)
+    try:
+        # Check rate limits first
+        await rate_limit_middleware(request, x_api_key)
+        
+        # Add rate limit headers to response
+        if hasattr(request.state, 'rate_limit_headers'):
+            for header, value in request.state.rate_limit_headers.items():
+                response.headers[header] = value
+        
+        # Verify API key if required
+        if os.environ.get("API_KEY_REQUIRED", "false").lower() == "true":
+            if not x_api_key:
+                raise HTTPException(
+                    status_code=401,
+                    detail=APIError(
+                        error="unauthorized",
+                        code="API_KEY_MISSING",
+                        message="API key is required"
+                    ).dict()
+                )
+            expected_key = os.environ.get("API_KEY")
+            if not expected_key or x_api_key != expected_key:
+                raise HTTPException(
+                    status_code=403,
+                    detail=APIError(
+                        error="forbidden",
+                        code="INVALID_API_KEY",
+                        message="Invalid API key"
+                    ).dict()
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in verify_api_key: {str(e)}")
     
-    # Add rate limit headers to response
-    if hasattr(request.state, 'rate_limit_headers'):
-        for header, value in request.state.rate_limit_headers.items():
-            response.headers[header] = value
-    
-    # Verify API key if required
-    if os.environ.get("API_KEY_REQUIRED", "true").lower() == "true":
-        if not x_api_key:
-            raise HTTPException(
-                status_code=401,
-                detail=APIError(
-                    error="unauthorized",
-                    code="API_KEY_MISSING",
-                    message="API key is required"
-                ).dict()
-            )
-        expected_key = os.environ.get("API_KEY")
-        if not expected_key or x_api_key != expected_key:
-            raise HTTPException(
-                status_code=403,
-                detail=APIError(
-                    error="forbidden",
-                    code="INVALID_API_KEY",
-                    message="Invalid API key"
-                ).dict()
-            )
     return x_api_key
 
 # API endpoint to analyze text

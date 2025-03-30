@@ -7,7 +7,6 @@ import time
 from typing import Dict, Tuple, Optional
 from fastapi import Request, HTTPException
 import os
-import redis
 import json
 import logging
 from datetime import datetime, timedelta
@@ -15,25 +14,33 @@ from datetime import datetime, timedelta
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Redis configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-try:
-    redis_client = redis.from_url(REDIS_URL)
-    # Test connection
-    redis_client.ping()
-    logger.info("Successfully connected to Redis")
-except redis.ConnectionError as e:
-    logger.error(f"Failed to connect to Redis: {str(e)}")
-    # Fallback to in-memory rate limiting if Redis is unavailable
-    redis_client = None
-    
-# Rate limit configuration
+# In-memory store for fallback when Redis is unavailable
+in_memory_store = {}
+
+# Default settings
 DEFAULT_RATE_LIMIT = int(os.getenv("RATE_LIMIT", "100"))  # requests per time window
 DEFAULT_RATE_WINDOW = int(os.getenv("RATE_WINDOW", "3600"))  # seconds (1 hour)
 PRO_RATE_LIMIT = int(os.getenv("PRO_RATE_LIMIT", "1000"))  # requests per time window for pro users
 
-# In-memory store for fallback when Redis is unavailable
-in_memory_store = {}
+# Redis client will be initialized later if Redis is available
+redis_client = None
+
+# Try to import Redis and connect safely, but don't crash if it's not available
+try:
+    import redis
+    # Redis configuration
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+    try:
+        redis_client = redis.from_url(REDIS_URL)
+        # Test connection
+        redis_client.ping()
+        logger.info("Successfully connected to Redis")
+    except Exception as e:
+        logger.warning(f"Failed to connect to Redis: {str(e)}. Using in-memory fallback.")
+        redis_client = None
+except ImportError:
+    logger.warning("Redis package not installed. Using in-memory fallback for rate limiting.")
+    redis_client = None
 
 def get_client_identifier(request: Request, api_key: Optional[str] = None) -> str:
     """
@@ -51,8 +58,12 @@ def get_client_identifier(request: Request, api_key: Optional[str] = None) -> st
         return f"key:{api_key}"
     
     # Otherwise, use the client IP
-    client_host = request.client.host if request.client else "unknown"
-    return f"ip:{client_host}"
+    try:
+        client_host = request.client.host if request.client else "unknown"
+        return f"ip:{client_host}"
+    except Exception:
+        # Fallback if client info can't be accessed
+        return "ip:unknown"
 
 def get_rate_limit(api_key: Optional[str] = None) -> Tuple[int, int]:
     """
@@ -174,38 +185,44 @@ async def rate_limit_middleware(request: Request, api_key: Optional[str] = None)
     Raises:
         HTTPException: When the client exceeds rate limits
     """
-    # Skip rate limiting for certain paths
-    if request.url.path in ["/health", "/docs", "/redoc", "/openapi.json"]:
-        return
-    
-    # Get the client identifier
-    identifier = get_client_identifier(request, api_key)
-    
-    # Get rate limit settings
-    limit, window = get_rate_limit(api_key)
-    
-    # Check rate limit
-    is_allowed, remaining, limit, reset = check_rate_limit(identifier, limit, window)
-    
-    # Add rate limit headers
-    request.state.rate_limit_headers = {
-        "X-Rate-Limit-Limit": str(limit),
-        "X-Rate-Limit-Remaining": str(remaining),
-        "X-Rate-Limit-Reset": str(reset)
-    }
-    
-    # Raise exception if rate limited
-    if not is_allowed:
-        raise HTTPException(
-            status_code=429,
-            detail={
-                "error": "too_many_requests",
-                "code": "RATE_LIMIT_EXCEEDED",
-                "message": f"Rate limit exceeded. Try again in {reset} seconds.",
-                "details": {
-                    "limit": limit,
-                    "remaining": 0,
-                    "reset": reset
+    try:
+        # Skip rate limiting for certain paths
+        if request.url.path in ["/health", "/docs", "/redoc", "/openapi.json", "/"]:
+            return
+        
+        # Get the client identifier
+        identifier = get_client_identifier(request, api_key)
+        
+        # Get rate limit settings
+        limit, window = get_rate_limit(api_key)
+        
+        # Check rate limit
+        is_allowed, remaining, limit, reset = check_rate_limit(identifier, limit, window)
+        
+        # Add rate limit headers
+        request.state.rate_limit_headers = {
+            "X-Rate-Limit-Limit": str(limit),
+            "X-Rate-Limit-Remaining": str(remaining),
+            "X-Rate-Limit-Reset": str(reset)
+        }
+        
+        # Raise exception if rate limited
+        if not is_allowed:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "too_many_requests",
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": f"Rate limit exceeded. Try again in {reset} seconds.",
+                    "details": {
+                        "limit": limit,
+                        "remaining": 0,
+                        "reset": reset
+                    }
                 }
-            }
-        ) 
+            )
+    except Exception as e:
+        # Log but don't crash the application
+        logger.error(f"Error in rate limiting middleware: {str(e)}")
+        # Still allow the request to continue
+        return 

@@ -116,364 +116,90 @@ async def root():
     """
     Serves the HTML demo interface for testing the API.
     """
-    # Read the modern.html file first (new UI)
-    modern_html_path = Path(__file__).parent / "static" / "modern.html"
-    if modern_html_path.exists():
-        with open(modern_html_path, "r") as file:
-            return file.read()
-            
-    # Fallback to simple.html if modern doesn't exist
-    simple_html_path = Path(__file__).parent / "static" / "simple.html"
-    if simple_html_path.exists():
-        with open(simple_html_path, "r") as file:
-            return file.read()
-    else:
-        # Fallback to embedded HTML
-        return """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>ToxidAPI - Text Analysis with AI</title>
-            <style>
-                /* Embedded dark theme CSS */
-                :root {
-                    --primary-color: #9D4EDD;
-                    --background-color: #121212;
-                    --card-background: #1E1E1E;
-                    --text-color: #FFFFFF;
-                    --secondary-text: #B0B0B0;
-                    --border-color: #333333;
-                    --success-color: #4CAF50;
-                    --error-color: #F44336;
-                }
+    try:
+        # Read the modern.html file first (new UI)
+        modern_html_path = Path(__file__).parent / "static" / "modern.html"
+        if modern_html_path.exists():
+            try:
+                with open(modern_html_path, "r", encoding="utf-8") as file:
+                    return file.read()
+            except Exception as e:
+                logger.error(f"Error reading modern.html: {str(e)}")
+                # Continue to fallback
                 
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                    background-color: var(--background-color);
-                    color: var(--text-color);
-                    margin: 0;
-                    padding: 0;
-                    line-height: 1.6;
-                }
-                
-                .container {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    padding: 20px;
-                }
-                
-                header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 20px;
-                    border-bottom: 1px solid var(--border-color);
-                    margin-bottom: 20px;
-                }
-                
-                .logo {
-                    font-size: 24px;
-                    font-weight: 700;
-                    color: var(--primary-color);
-                    text-decoration: none;
-                }
-                
-                nav a {
-                    color: var(--secondary-text);
-                    margin-left: 15px;
-                    text-decoration: none;
-                }
-                
-                nav a:hover {
-                    color: var(--primary-color);
-                }
-                
-                h1 {
-                    color: var(--primary-color);
-                    margin-bottom: 20px;
-                }
-                
-                p {
-                    color: var(--secondary-text);
-                    margin-bottom: 20px;
-                }
-                
-                .card {
-                    background-color: var(--card-background);
-                    border-radius: 8px;
-                    padding: 20px;
-                    margin-bottom: 20px;
-                    border: 1px solid var(--border-color);
-                }
-                
-                textarea {
-                    width: 100%;
-                    height: 120px;
-                    padding: 12px;
-                    border-radius: 4px;
-                    background-color: #2A2A2A;
-                    border: 1px solid var(--border-color);
-                    color: var(--text-color);
-                    resize: vertical;
-                    font-family: inherit;
-                    margin-bottom: 15px;
-                    box-sizing: border-box;
-                }
-                
-                button {
-                    padding: 10px 20px;
-                    border-radius: 4px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    border: none;
-                    margin-right: 10px;
-                }
-                
-                .button-primary {
-                    background-color: var(--primary-color);
-                    color: white;
-                }
-                
-                .button-secondary {
-                    background-color: transparent;
-                    color: var(--text-color);
-                    border: 1px solid var(--border-color);
-                }
-                
-                .result {
-                    display: none;
-                }
-                
-                .sample {
-                    background-color: #2A2A2A;
-                    padding: 15px;
-                    margin: 10px 0;
-                    border-radius: 4px;
-                    cursor: pointer;
-                }
-                
-                .toxic {
-                    color: var(--error-color);
-                    font-weight: 600;
-                }
-                
-                .not-toxic {
-                    color: var(--success-color);
-                    font-weight: 600;
-                }
-                
-                .error {
-                    color: var(--error-color);
-                    padding: 15px;
-                    border: 1px solid var(--error-color);
-                    border-radius: 4px;
-                    margin-top: 15px;
-                }
-                
-                .analyzing {
-                    padding: 20px;
-                    text-align: center;
-                }
-                
-                footer {
-                    text-align: center;
-                    padding: 20px;
-                    color: var(--secondary-text);
-                    margin-top: 40px;
-                    border-top: 1px solid var(--border-color);
-                }
-                
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin: 15px 0;
-                }
-                
-                th, td {
-                    text-align: left;
-                    padding: 8px;
-                    border-bottom: 1px solid var(--border-color);
-                }
-                
-                th {
-                    color: var(--secondary-text);
-                }
-            </style>
-        </head>
-        <body>
-            <header>
-                <a href="/" class="logo">ToxidAPI</a>
-                <nav>
-                    <a href="/api">API Docs</a>
-                    <a href="/docs">ReDoc</a>
-                    <a href="https://github.com/sanjanatg/toxidapi" target="_blank">GitHub</a>
-                </nav>
-            </header>
-
-            <div class="container">
-                <h1>ToxidAPI Demo</h1>
-                <p>Test our AI-powered text analysis API that detects toxicity, sentiment, and identifies flagged content using Google's Gemini AI.</p>
-                
-                <div class="card">
-                    <label for="text">Enter text to analyze:</label>
-                    <textarea id="text" placeholder="Enter text to analyze..."></textarea>
-                    <div>
-                        <button id="analyze" class="button-primary">Analyze Text</button>
-                        <button id="clear" class="button-secondary">Clear</button>
-                    </div>
-                </div>
-                
-                <div id="result" class="card result">
-                    <!-- Results will be displayed here -->
-                </div>
-                
-                <h3>Sample Texts:</h3>
-                <div class="sample" onclick="document.getElementById('text').value=this.textContent;">I hate you, you're such a waste of space. Don't bother replying, I won't listen.</div>
-                <div class="sample" onclick="document.getElementById('text').value=this.textContent;">This conversation was great, thank you for sharing your thoughts with me!</div>
-                <div class="sample" onclick="document.getElementById('text').value=this.textContent;">F*** this sh1t, I'm done with these a$$holes.</div>
-                <div class="sample" onclick="document.getElementById('text').value=this.textContent;">The rain is nice, but the sunshine is warm.</div>
-                <div class="sample" onclick="document.getElementById('text').value=this.textContent;">This product sucks! Don't buy it, complete waste of money!!!</div>
-            </div>
-
-            <footer>
-                <p>API Documentation: 
-                    <a href="/api">Swagger UI</a> | 
-                    <a href="/docs">ReDoc</a> | 
-                    <a href="/static/api_docs.md">Markdown</a>
-                </p>
-                <p>© 2025 ToxidAPI. Powered by Google's Gemini AI.</p>
-            </footer>
-            
-            <script>
-                document.getElementById('analyze').addEventListener('click', async () => {
-                    const text = document.getElementById('text').value;
-                    if (!text) return;
-                    
-                    const resultDiv = document.getElementById('result');
-                    resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = '<div class="analyzing">Analyzing text...</div>';
-                    
-                    try {
-                        console.log('Current URL:', window.location.href);
-                        const apiUrl = new URL('/api/analyze', window.location.href).href;
-                        console.log('API URL:', apiUrl);
-                        
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ text })
-                        });
-                        
-                        if (!response.ok) {
-                            let errorMessage = 'Failed to analyze text';
-                            try {
-                                const errorData = await response.json();
-                                errorMessage = errorData.detail || errorMessage;
-                            } catch (e) {
-                                errorMessage = `Error ${response.status}: ${response.statusText}`;
-                            }
-                            throw new Error(errorMessage);
-                        }
-                        
-                        const data = await response.json();
-                        
-                        // Display results
-                        const toxicClass = data.toxicity.is_toxic ? 'toxic' : 'not-toxic';
-                        const toxicText = data.toxicity.is_toxic ? 'Toxic' : 'Not Toxic';
-                        
-                        resultDiv.innerHTML = `
-                            <h2>Analysis Results</h2>
-                            
-                            <div class="card">
-                                <h3>Toxicity</h3>
-                                <p>Score: ${data.toxicity.score.toFixed(4)}</p>
-                                <p>Result: <span class="${toxicClass}">${toxicText}</span></p>
-                                
-                                <h3>Detailed Toxicity Scores</h3>
-                                <table>
-                                    <tr>
-                                        <th>Category</th>
-                                        <th>Score</th>
-                                    </tr>
-                                    ${Object.entries(data.toxicity.detailed_scores).map(([key, value]) => 
-                                        `<tr>
-                                            <td>${key}</td>
-                                            <td>${value.toFixed(4)}</td>
-                                        </tr>`
-                                    ).join('')}
-                                </table>
-                            </div>
-                            
-                            <div class="card">
-                                <h3>Sentiment</h3>
-                                <p>Score: ${data.sentiment.score.toFixed(4)}</p>
-                                <p>Label: ${data.sentiment.label}</p>
-                            </div>
-                            
-                            <div class="card">
-                                <h3>Flagged Words</h3>
-                                <p>Count: ${data.flagged_words.count}</p>
-                                <p>Words: ${data.flagged_words.words.join(', ') || 'None'}</p>
-                                
-                                <h4>Categories</h4>
-                                <ul>
-                                    ${Object.entries(data.flagged_words.categories || {}).map(([category, words]) => 
-                                        `<li>${category}: ${words.join(', ')}</li>`
-                                    ).join('') || '<li>None</li>'}
-                                </ul>
-                                
-                                <p>Severity Score: ${data.flagged_words.severity_score.toFixed(4)}</p>
-                                <p>Is Severe: ${data.flagged_words.is_severe ? 'Yes' : 'No'}</p>
-                            </div>
-                            
-                            <div class="card">
-                                <h3>Processing Information</h3>
-                                <p>Processing Time: ${data.processing_time.toFixed(4)} seconds</p>
-                                <p>Analyzed Text: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"</p>
-                            </div>
-                        `;
-                    } catch (error) {
-                        console.error('Error:', error);
-                        resultDiv.innerHTML = `
-                            <div class="error">
-                                <strong>Error:</strong> ${error.message}
-                            </div>
-                        `;
-                    }
-                });
-                
-                // Add clear button functionality
-                document.getElementById('clear').addEventListener('click', () => {
-                    document.getElementById('text').value = '';
-                    document.getElementById('result').style.display = 'none';
-                });
-            </script>
-        </body>
-        </html>
-        """
+        # Fallback to simple.html if modern doesn't exist or couldn't be read
+        simple_html_path = Path(__file__).parent / "static" / "simple.html"
+        if simple_html_path.exists():
+            try:
+                with open(simple_html_path, "r", encoding="utf-8") as file:
+                    return file.read()
+            except Exception as e:
+                logger.error(f"Error reading simple.html: {str(e)}")
+                # Continue to fallback
+    except Exception as e:
+        logger.error(f"Error in root endpoint: {str(e)}")
+    
+    # Fallback to embedded HTML
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ToxidAPI - Text Analysis with AI</title>
+        <style>
+            /* Simplified dark theme CSS for fallback */
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background-color: #121212;
+                color: #FFFFFF;
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+            }
+            .container {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #1E1E1E;
+                border-radius: 8px;
+            }
+            h1, h2 { color: #9D4EDD; }
+            a { color: #9D4EDD; }
+            p { margin-bottom: 16px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>ToxidAPI</h1>
+            <p>AI-powered text analysis for toxicity, sentiment, and content moderation.</p>
+            <h2>Error Loading UI</h2>
+            <p>The full UI couldn't be loaded. You can still access the API directly.</p>
+            <p>Please check the <a href="/docs">API documentation</a> for more information.</p>
+        </div>
+    </body>
+    </html>
+    """
 
 # Health check endpoint
-@app.get("/health", summary="Health check endpoint", tags=["system"])
+@app.get("/health", include_in_schema=False)
 async def health_check():
     """
-    Check if the API is operational.
-    
-    Returns information about the API status, version, and model being used.
+    Simple health check endpoint to verify the API is online.
     """
-    return {
-        "status": "ok",
-        "version": "2.0.0",
-        "model": "gemini-2.0-flash",
-        "documentation": {
-            "swagger": "/api",
-            "redoc": "/docs",
-            "markdown": "/static/api_docs.md"
+    try:
+        return {
+            "status": "online",
+            "version": app.version,
+            "api_version": "v2",
+            "model": os.getenv("SENTIMENT_MODEL", "default")
         }
-    }
+    except Exception as e:
+        logger.error(f"Error in health check: {str(e)}")
+        return {
+            "status": "degraded",
+            "error": str(e)
+        }
 
 # Documentation redirection
 @app.get("/swagger", include_in_schema=False)
