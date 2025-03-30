@@ -30,7 +30,7 @@
     ],
     "env": {
         "PYTHON_VERSION": "3.9",
-        "REDIS_URL": "@redis_url",
+        "REDIS_URL": "${REDIS_URL}",
         "API_KEY_REQUIRED": "true",
         "RATE_LIMIT": "100",
         "PRO_RATE_LIMIT": "1000",
