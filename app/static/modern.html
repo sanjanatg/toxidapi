@@ -6,13 +6,13 @@
     <title>ToxidAPI - Professional Text Analysis API</title>
     <style>
         :root {
-            --primary-color: #6d2da2;
-            --primary-light: #e0b8ff;
-            --primary-dark: #6d23ad;
+            --primary-color: #9D4EDD;
+            --primary-light: #C77DFF;
+            --primary-dark: #7B2CBF;
             --background-color: #121212;
+            --sidebar-background: #1E1E1E;
             --card-background: #1E1E1E;
-            --sidebar-bg: #2d1f43;
-            --text-color: #ffffff;
+            --text-color: #FFFFFF;
             --secondary-text: #B0B0B0;
             --border-color: #333333;
             --success-color: #4CAF50;
@@ -22,31 +22,45 @@
         }
         
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: var(--background-color);
             color: var(--text-color);
-            display: flex;
-            min-height: 100vh;
             line-height: 1.6;
+            display: flex;
+            flex-direction: row;
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
         
-        /* Sidebar Styles */
-        .sidebar {
-            width: 260px;
-            background-color: var(--sidebar-bg);
+        aside {
+            width: 250px;
+            background-color: var(--sidebar-background);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
-            position: fixed;
-            height: 100%;
-            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        main {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            max-width: calc(100% - 250px);
+            background-color: var(--background-color);
+            min-height: 100vh;
         }
         
         .sidebar-header {
@@ -55,57 +69,98 @@
         }
         
         .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
-            text-decoration: none;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 10px;
         }
         
         .logo svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--primary-color);
+            color: var(--primary-color);
         }
         
-        .nav-menu {
-            padding: 20px 0;
-            list-style: none;
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+        
+        nav {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
         }
         
         .nav-item {
-            margin-bottom: 5px;
-        }
-        
-        .nav-link {
             display: flex;
             align-items: center;
-            padding: 10px 20px;
+            padding: 12px 20px;
             color: var(--secondary-text);
             text-decoration: none;
-            border-left: 3px solid transparent;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            gap: 10px;
+            cursor: pointer;
         }
         
-        .nav-link:hover, .nav-link.active {
-            background-color: rgba(157, 78, 221, 0.1);
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
             color: var(--text-color);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(157, 78, 221, 0.15);
+            color: var(--primary-color);
             border-left: 3px solid var(--primary-color);
         }
         
-        .nav-link svg {
-            width: 18px;
-            height: 18px;
-            margin-right: 10px;
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .rate-limit-container {
+            margin-top: auto;
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .rate-limit-container h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+            color: var(--secondary-text);
+        }
+        
+        .rate-limit-display {
+            margin-bottom: 10px;
+        }
+        
+        .rate-limit-display span {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            border-radius: 3px;
+            transition: width 0.3s ease;
         }
         
         .sidebar-footer {
-            margin-top: auto;
-            padding: 15px 20px;
+            padding: 20px;
             border-top: 1px solid var(--border-color);
-            font-size: 12px;
+            font-size: 0.8rem;
             color: var(--secondary-text);
         }
         
@@ -145,78 +200,68 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
+    <aside>
         <div class="sidebar-header">
-            <a href="/" class="logo">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 16.5v-9l6 4.5-6 4.5z"/>
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
-                ToxidAPI
-            </a>
+                <h1>ToxidAPI</h1>
+            </div>
         </div>
         
-        <ul class="nav-menu">
-            <li class="nav-item">
-                <a href="#analyze" class="nav-link active" data-section="analyze">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M19.43 12.98c.04-.32.07-.64.07-.98 0-.34-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98 0 .33.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
-                    </svg>
-                    Analyze Text
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#api-docs" class="nav-link" data-section="api-docs">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                    </svg>
-                    API Documentation
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#api-keys" class="nav-link" data-section="api-keys">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
-                    </svg>
-                    API Keys
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#version" class="nav-link" data-section="version">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M18 4l-4 4h3v7c0 1.1-.9 2-2 2s-2-.9-2-2V8c0-2.21-1.79-4-4-4S5 5.79 5 8v7H2l4 4 4-4H7V8c0-1.1.9-2 2-2s2 .9 2 2v7c0 2.21 1.79 4 4 4s4-1.79 4-4V8h3l-4-4z"/>
-                    </svg>
-                    API Version
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#history" class="nav-link" data-section="history">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
-                    </svg>
-                    History
-                </a>
-            </li>
-        </ul>
+        <nav>
+            <a href="#analyze" class="nav-item active">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Analyze Text
+            </a>
+            <a href="#documentation" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-book">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                API Documentation
+            </a>
+            <a href="#api-keys" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-key">
+                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                </svg>
+                API Keys
+            </a>
+            <a href="#versions" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                API Version
+            </a>
+            <a href="#history" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                History
+            </a>
+        </nav>
         
-        <!-- Rate Limit Display -->
-        <div class="rate-limit-display">
+        <div id="rate-limit-container" class="rate-limit-container">
             <h3>Rate Limits</h3>
-            <div class="rate-info">
-                <span>Requests:</span>
-                <span id="remaining-requests">75/100</span>
-            </div>
-            <div class="progress-bar">
-                <div class="fill" style="width: 75%"></div>
-            </div>
-            <div class="rate-info">
-                <span>Reset in:</span>
-                <span id="reset-time">35:42</span>
+            <div class="rate-limit-display">
+                <span>Requests remaining:</span>
+                <span id="rate-limit-count">75/100</span>
+                <div class="progress-bar">
+                    <div id="rate-limit-progress" class="progress-fill" style="width: 75%"></div>
+                </div>
             </div>
         </div>
         
         <div class="sidebar-footer">
-            <p>© 2025 ToxidAPI</p>
+            <p>&copy; 2025 ToxidAPI</p>
             <p>Version 2.0.0</p>
         </div>
     </aside>
@@ -1138,7 +1183,7 @@ POST /api/v2/analyze  # Current version</code></pre>
             
             // Helper function to update rate limits in the sidebar
             function updateRateLimits(limit, remaining) {
-                const rateLimitElement = document.getElementById('remaining-requests');
+                const rateLimitElement = document.getElementById('rate-limit-count');
                 const progressBar = document.getElementById('rate-limit-progress');
                 
                 rateLimitElement.textContent = `${remaining}/${limit}`;
