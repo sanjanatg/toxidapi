@@ -953,34 +953,34 @@
         </div>
         
         <nav>
-            <a href="#analyze" class="nav-item active">
+            <a href="#analyze" data-section="analyze-section" class="nav-item active">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
                 Analyze Text
             </a>
-            <a href="#documentation" class="nav-item">
+            <a href="#documentation" data-section="api-docs-section" class="nav-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-book">
                     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                 </svg>
                 API Documentation
             </a>
-            <a href="#api-keys" class="nav-item">
+            <a href="#api-keys" data-section="api-keys-section" class="nav-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-key">
                     <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
                 </svg>
                 API Keys
             </a>
-            <a href="#versions" class="nav-item">
+            <a href="#versions" data-section="version-section" class="nav-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-code">
                     <polyline points="16 18 22 12 16 6"></polyline>
                     <polyline points="8 6 2 12 8 18"></polyline>
                 </svg>
                 API Version
             </a>
-            <a href="#history" class="nav-item">
+            <a href="#history" data-section="history" class="nav-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock">
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
@@ -1009,7 +1009,7 @@
     <!-- Main Content Area -->
     <main class="main-content">
         <!-- Analyze Section -->
-        <section id="analyze-section" class="content-section active">
+        <section id="analyze-section" class="main-section active">
             <div class="section-header">
                 <h1>Analyze Text</h1>
                 <p>Use our AI-powered API to analyze text for toxicity, sentiment, and content moderation.</p>
@@ -1020,24 +1020,26 @@
                     <h2>Enter Text</h2>
                 </div>
                 <div class="card-body">
-                    <div class="form-group">
-                        <label for="text-to-analyze">Text to analyze:</label>
-                        <textarea id="text-to-analyze" placeholder="Enter text to analyze..."></textarea>
-                    </div>
-                    <div class="api-key-container">
-                        <label for="api-key">API Key (Optional):</label>
-                        <div class="api-key-input">
-                            <input type="text" id="api-key" placeholder="Enter your API key for higher rate limits">
-                            <select id="api-version">
-                                <option value="v2" selected>v2 (Latest)</option>
-                                <option value="v1">v1 (Deprecated)</option>
-                            </select>
+                    <form id="analyze-form">
+                        <div class="form-group">
+                            <label for="text-to-analyze">Text to analyze:</label>
+                            <textarea id="text-to-analyze" name="text" placeholder="Enter text to analyze..."></textarea>
                         </div>
-                    </div>
-                    <div class="form-actions">
-                        <button id="analyze-button" class="btn btn-primary">Analyze</button>
-                        <button id="clear-button" class="btn btn-secondary">Clear</button>
-                    </div>
+                        <div class="api-key-container">
+                            <label for="api-key">API Key (Optional):</label>
+                            <div class="api-key-input">
+                                <input type="text" id="api-key" name="api_key" placeholder="Enter your API key for higher rate limits">
+                                <select id="api-version" name="version">
+                                    <option value="v2" selected>v2 (Latest)</option>
+                                    <option value="v1">v1 (Deprecated)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" id="analyze-button" class="btn primary">Analyze</button>
+                            <button type="button" id="clear-button" class="btn secondary">Clear</button>
+                        </div>
+                    </form>
                 </div>
             </div>
             
@@ -1050,13 +1052,24 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="results-loading" id="loading-spinner">
+                    <div class="loading-spinner" id="loading-spinner">
                         <div class="spinner"></div>
                         <p>Analyzing your text...</p>
                     </div>
                     <div id="error-message" class="error-message" style="display: none;"></div>
                     <div class="results-content" style="display: none;">
-                        <!-- Results will be displayed here by JavaScript -->
+                        <div class="result-summary">
+                            <div class="result-item">
+                                <h3>Toxicity</h3>
+                                <div class="result-score toxicity-score">0%</div>
+                                <div class="label toxicity-label">Clean</div>
+                            </div>
+                            <div class="result-item">
+                                <h3>Sentiment</h3>
+                                <div class="result-score sentiment-score">0.00</div>
+                                <div class="label sentiment-label">Neutral</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1076,8 +1089,8 @@
             </div>
         </section>
         
-        <!-- API Documentation Section (placeholder) -->
-        <section id="api-docs-section" class="content-section">
+        <!-- API Documentation Section -->
+        <section id="api-docs-section" class="main-section">
             <div class="section-header">
                 <h1>API Documentation</h1>
                 <p>Learn how to use the ToxidAPI in your applications.</p>
@@ -1137,7 +1150,7 @@
         </section>
         
         <!-- API Version Section -->
-        <section id="version-section" class="content-section">
+        <section id="version-section" class="main-section">
             <div class="section-header">
                 <h1>API Versions</h1>
                 <p>ToxidAPI supports multiple API versions for backward compatibility.</p>
@@ -1847,6 +1860,154 @@ POST /api/v2/analyze  # Current version</code></pre>
             font-family: 'Courier New', monospace;
             color: var(--primary-light);
         }
+        
+        .btn.google:hover, .btn.github:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* API Keys Management styles */
+        .api-keys-management {
+            margin-bottom: 30px;
+        }
+        
+        .api-keys-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .api-key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        
+        .key-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .key-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .key-value {
+            font-family: 'Courier New', monospace;
+            color: var(--secondary-text);
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .key-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+        
+        .key-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .key-copy, .key-revoke {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .key-revoke {
+            color: var(--error-color);
+        }
+        
+        .usage-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .usage-item h4 {
+            margin-bottom: 10px;
+        }
+        
+        .usage-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+        
+        .api-keys-info {
+            margin-top: 30px;
+        }
+        
+        .api-keys-info h3 {
+            color: var(--primary-color);
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        .api-keys-info pre {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .api-keys-info code {
+            font-family: 'Courier New', monospace;
+            color: var(--primary-light);
+        }
+        
+        .api-keys-info ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .api-keys-info li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        /* Login required views */
+        .login-required {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .login-required svg {
+            margin-bottom: 20px;
+            color: var(--secondary-text);
+        }
+        
+        .login-required p {
+            margin-bottom: 20px;
+            color: var(--secondary-text);
+            font-size: 16px;
+        }
     </style>
     
     <script>
@@ -2150,92 +2311,112 @@ POST /api/v2/analyze  # Current version</code></pre>
             // Set up sample text click handlers
             sampleTexts.forEach(sample => {
                 sample.addEventListener('click', function() {
-                    textarea.value = this.textContent;
+                    const textArea = document.getElementById('text-to-analyze');
+                    if (textArea) {
+                        textArea.value = this.textContent;
+                    }
                 });
             });
+            
+            // Handle analyze button click directly if form is not present
+            if (!analyzeForm && analyzeBtn) {
+                analyzeBtn.addEventListener('click', function() {
+                    handleAnalyzeText();
+                });
+            }
             
             // Handle form submission
             if (analyzeForm) {
                 analyzeForm.addEventListener('submit', function(e) {
                     e.preventDefault();
+                    handleAnalyzeText();
+                });
+            }
+            
+            // Function to handle text analysis
+            function handleAnalyzeText() {
+                const textArea = document.getElementById('text-to-analyze');
+                const apiKeyInput = document.getElementById('api-key');
+                
+                const text = textArea ? textArea.value.trim() : '';
+                
+                if (!text) {
+                    showNotification('Please enter some text to analyze.');
+                    return;
+                }
+                
+                // Show loading state
+                if (resultsContainer) resultsContainer.style.display = 'block';
+                if (loadingSpinner) loadingSpinner.style.display = 'flex';
+                if (resultsContent) resultsContent.style.display = 'none';
+                if (errorMessage) errorMessage.style.display = 'none';
+                
+                // Mock API call with timeout
+                setTimeout(() => {
+                    // Hide loading spinner
+                    if (loadingSpinner) loadingSpinner.style.display = 'none';
                     
-                    const text = textarea.value.trim();
+                    // Generate mock results
+                    const toxicityScore = Math.random();
+                    const sentimentScore = Math.random() * 2 - 1; // -1 to 1
                     
-                    if (!text) {
-                        showNotification('Please enter some text to analyze.');
-                        return;
+                    // Determine toxicity classification
+                    let toxicityClass, toxicityLabel;
+                    if (toxicityScore < 0.3) {
+                        toxicityClass = 'clean';
+                        toxicityLabel = 'Clean';
+                    } else if (toxicityScore < 0.6) {
+                        toxicityClass = 'moderate';
+                        toxicityLabel = 'Potentially Offensive';
+                    } else {
+                        toxicityClass = 'toxic';
+                        toxicityLabel = 'Toxic';
                     }
                     
-                    // Show loading state
-                    resultsContainer.style.display = 'block';
-                    loadingSpinner.style.display = 'flex';
-                    resultsContent.style.display = 'none';
-                    if (errorMessage) errorMessage.style.display = 'none';
+                    // Determine sentiment classification
+                    let sentimentClass, sentimentLabel;
+                    if (sentimentScore < -0.3) {
+                        sentimentClass = 'negative';
+                        sentimentLabel = 'Negative';
+                    } else if (sentimentScore < 0.3) {
+                        sentimentClass = 'neutral';
+                        sentimentLabel = 'Neutral';
+                    } else {
+                        sentimentClass = 'positive';
+                        sentimentLabel = 'Positive';
+                    }
                     
-                    // Mock API call with timeout
-                    setTimeout(() => {
-                        // Hide loading spinner
-                        loadingSpinner.style.display = 'none';
-                        
-                        // Generate mock results
-                        const toxicityScore = Math.random();
-                        const sentimentScore = Math.random() * 2 - 1; // -1 to 1
-                        
-                        // Determine toxicity classification
-                        let toxicityClass, toxicityLabel;
-                        if (toxicityScore < 0.3) {
-                            toxicityClass = 'clean';
-                            toxicityLabel = 'Clean';
-                        } else if (toxicityScore < 0.6) {
-                            toxicityClass = 'moderate';
-                            toxicityLabel = 'Potentially Offensive';
-                        } else {
-                            toxicityClass = 'toxic';
-                            toxicityLabel = 'Toxic';
-                        }
-                        
-                        // Determine sentiment classification
-                        let sentimentClass, sentimentLabel;
-                        if (sentimentScore < -0.3) {
-                            sentimentClass = 'negative';
-                            sentimentLabel = 'Negative';
-                        } else if (sentimentScore < 0.3) {
-                            sentimentClass = 'neutral';
-                            sentimentLabel = 'Neutral';
-                        } else {
-                            sentimentClass = 'positive';
-                            sentimentLabel = 'Positive';
-                        }
-                        
-                        // Update results content
-                        const toxicityScoreEl = document.querySelector('.toxicity-score');
-                        const toxicityLabelEl = document.querySelector('.toxicity-label');
-                        const sentimentScoreEl = document.querySelector('.sentiment-score');
-                        const sentimentLabelEl = document.querySelector('.sentiment-label');
-                        
-                        if (toxicityScoreEl) toxicityScoreEl.textContent = Math.round(toxicityScore * 100) + '%';
-                        if (toxicityLabelEl) {
-                            toxicityLabelEl.textContent = toxicityLabel;
-                            toxicityLabelEl.className = 'label toxicity-label ' + toxicityClass;
-                        }
-                        
-                        if (sentimentScoreEl) sentimentScoreEl.textContent = sentimentScore.toFixed(2);
-                        if (sentimentLabelEl) {
-                            sentimentLabelEl.textContent = sentimentLabel;
-                            sentimentLabelEl.className = 'label sentiment-label ' + sentimentClass;
-                        }
-                        
-                        // Show results
-                        resultsContent.style.display = 'block';
-                    }, 1500);
-                });
+                    // Update results content
+                    const toxicityScoreEl = document.querySelector('.toxicity-score');
+                    const toxicityLabelEl = document.querySelector('.toxicity-label');
+                    const sentimentScoreEl = document.querySelector('.sentiment-score');
+                    const sentimentLabelEl = document.querySelector('.sentiment-label');
+                    
+                    if (toxicityScoreEl) toxicityScoreEl.textContent = Math.round(toxicityScore * 100) + '%';
+                    if (toxicityLabelEl) {
+                        toxicityLabelEl.textContent = toxicityLabel;
+                        toxicityLabelEl.className = 'label toxicity-label ' + toxicityClass;
+                    }
+                    
+                    if (sentimentScoreEl) sentimentScoreEl.textContent = sentimentScore.toFixed(2);
+                    if (sentimentLabelEl) {
+                        sentimentLabelEl.textContent = sentimentLabel;
+                        sentimentLabelEl.className = 'label sentiment-label ' + sentimentClass;
+                    }
+                    
+                    // Show results
+                    if (resultsContent) resultsContent.style.display = 'block';
+                }, 1500);
             }
             
             // Clear form
             if (clearBtn) {
                 clearBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    if (textarea) textarea.value = '';
+                    const textArea = document.getElementById('text-to-analyze');
+                    const apiKeyInput = document.getElementById('api-key');
+                    
+                    if (textArea) textArea.value = '';
                     if (apiKeyInput) apiKeyInput.value = '';
                     if (resultsContainer) resultsContainer.style.display = 'none';
                 });
