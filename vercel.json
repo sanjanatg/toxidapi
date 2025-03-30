@@ -16,11 +16,24 @@
             "dest": "app/static/$1"
         },
         {
+            "src": "/api/v1/(.*)",
+            "dest": "app/main.py",
+            "status": 301,
+            "headers": {
+                "Location": "/api/v2/$1"
+            }
+        },
+        {
             "src": "/(.*)",
             "dest": "app/main.py"
         }
     ],
     "env": {
-        "PYTHON_VERSION": "3.9"
+        "PYTHON_VERSION": "3.9",
+        "REDIS_URL": "@redis_url",
+        "API_KEY_REQUIRED": "true",
+        "RATE_LIMIT": "100",
+        "PRO_RATE_LIMIT": "1000",
+        "RATE_WINDOW": "3600"
     }
 } 

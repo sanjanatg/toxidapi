@@ -1,22 +1,39 @@
 """
 Rate limiting module for ToxidAPI.
-Implements in-memory rate limiting for API endpoints.
+Implements rate limiting using Redis for persistent storage.
 """
 
 import time
 from typing import Dict, Tuple, Optional
 from fastapi import Request, HTTPException
 import os
+import redis
+import json
+import logging
+from datetime import datetime, timedelta
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Redis configuration
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+try:
+    redis_client = redis.from_url(REDIS_URL)
+    # Test connection
+    redis_client.ping()
+    logger.info("Successfully connected to Redis")
+except redis.ConnectionError as e:
+    logger.error(f"Failed to connect to Redis: {str(e)}")
+    # Fallback to in-memory rate limiting if Redis is unavailable
+    redis_client = None
+    
 # Rate limit configuration
-DEFAULT_RATE_LIMIT = int(os.environ.get("RATE_LIMIT", "100"))  # requests per time window
-DEFAULT_RATE_WINDOW = int(os.environ.get("RATE_WINDOW", "3600"))  # seconds (1 hour)
+DEFAULT_RATE_LIMIT = int(os.getenv("RATE_LIMIT", "100"))  # requests per time window
+DEFAULT_RATE_WINDOW = int(os.getenv("RATE_WINDOW", "3600"))  # seconds (1 hour)
+PRO_RATE_LIMIT = int(os.getenv("PRO_RATE_LIMIT", "1000"))  # requests per time window for pro users
 
-# Storage for rate limiting (in-memory)
-# In production, consider using Redis or another external store
-# Format: {key: [(timestamp1, count1), (timestamp2, count2), ...]}
-rate_limit_store: Dict[str, list] = {}
-
+# In-memory store for fallback when Redis is unavailable
+in_memory_store = {}
 
 def get_client_identifier(request: Request, api_key: Optional[str] = None) -> str:
     """
@@ -37,60 +54,111 @@ def get_client_identifier(request: Request, api_key: Optional[str] = None) -> st
     client_host = request.client.host if request.client else "unknown"
     return f"ip:{client_host}"
 
-
-def check_rate_limit(
-    identifier: str, 
-    limit: int = DEFAULT_RATE_LIMIT,
-    window: int = DEFAULT_RATE_WINDOW
-) -> Tuple[bool, int, int, int]:
+def get_rate_limit(api_key: Optional[str] = None) -> Tuple[int, int]:
     """
-    Check if a request should be rate limited.
+    Get rate limit and window for the client.
     
     Args:
-        identifier: Client identifier (API key or IP)
-        limit: Maximum number of requests allowed in the time window
+        api_key: Optional API key
+        
+    Returns:
+        Tuple of (rate_limit, window_seconds)
+    """
+    if api_key and redis_client:
+        try:
+            # Check if this is a pro API key
+            key_data = redis_client.get(f"api_key:{api_key}")
+            if key_data:
+                key_info = json.loads(key_data)
+                if key_info.get("tier") == "pro":
+                    return PRO_RATE_LIMIT, DEFAULT_RATE_WINDOW
+        except Exception as e:
+            logger.error(f"Error getting rate limit: {str(e)}")
+    
+    return DEFAULT_RATE_LIMIT, DEFAULT_RATE_WINDOW
+
+def check_rate_limit(identifier: str, limit: int, window: int) -> Tuple[bool, int, int, int]:
+    """
+    Check if the client has exceeded their rate limit.
+    
+    Args:
+        identifier: Client identifier
+        limit: Rate limit
         window: Time window in seconds
         
     Returns:
-        Tuple of (is_allowed, remaining, limit, reset)
+        Tuple of (is_allowed, remaining_requests, limit, reset_time)
     """
+    # Use Redis if available
+    if redis_client:
+        try:
+            now = datetime.utcnow()
+            key = f"rate_limit:{identifier}"
+            
+            # Get current usage
+            usage_data = redis_client.get(key)
+            if not usage_data:
+                # Initialize usage data
+                usage_data = {
+                    "count": 1,
+                    "reset_time": (now + timedelta(seconds=window)).timestamp()
+                }
+                redis_client.setex(key, window, json.dumps(usage_data))
+                return True, limit - 1, limit, window
+            
+            usage = json.loads(usage_data)
+            
+            # Check if window has expired
+            if now.timestamp() > usage["reset_time"]:
+                # Reset usage
+                usage = {
+                    "count": 1,
+                    "reset_time": (now + timedelta(seconds=window)).timestamp()
+                }
+                redis_client.setex(key, window, json.dumps(usage))
+                return True, limit - 1, limit, window
+            
+            # Check if limit exceeded
+            if usage["count"] >= limit:
+                reset_time = int(usage["reset_time"] - now.timestamp())
+                return False, 0, limit, reset_time
+            
+            # Increment usage
+            usage["count"] += 1
+            redis_client.setex(key, window, json.dumps(usage))
+            return True, limit - usage["count"], limit, int(usage["reset_time"] - now.timestamp())
+        except Exception as e:
+            logger.error(f"Redis error in check_rate_limit: {str(e)}")
+            # Fall back to in-memory rate limiting
+    
+    # In-memory fallback
     current_time = int(time.time())
     
     # Initialize if not exists
-    if identifier not in rate_limit_store:
-        rate_limit_store[identifier] = []
+    if identifier not in in_memory_store:
+        in_memory_store[identifier] = {
+            "count": 1,
+            "reset_time": current_time + window
+        }
+        return True, limit - 1, limit, window
     
-    # Clean up old entries
-    rate_limit_store[identifier] = [
-        (ts, count) for ts, count in rate_limit_store[identifier]
-        if current_time - ts < window
-    ]
+    # Check if window has expired
+    if current_time > in_memory_store[identifier]["reset_time"]:
+        # Reset usage
+        in_memory_store[identifier] = {
+            "count": 1,
+            "reset_time": current_time + window
+        }
+        return True, limit - 1, limit, window
     
-    # Calculate total count in the current time window
-    total_count = sum(count for _, count in rate_limit_store[identifier])
-    
-    # Check if over limit
-    if total_count >= limit:
-        # Calculate reset time
-        if rate_limit_store[identifier]:
-            oldest_ts = min(ts for ts, _ in rate_limit_store[identifier])
-            reset_time = oldest_ts + window - current_time
-        else:
-            reset_time = window
-            
+    # Check if limit exceeded
+    if in_memory_store[identifier]["count"] >= limit:
+        reset_time = in_memory_store[identifier]["reset_time"] - current_time
         return False, 0, limit, reset_time
     
-    # Record this request
-    rate_limit_store[identifier].append((current_time, 1))
-    
-    # Calculate remaining
-    remaining = limit - (total_count + 1)
-    
-    # Calculate reset time from now
-    reset_time = window
-    
-    return True, remaining, limit, reset_time
-
+    # Increment usage
+    in_memory_store[identifier]["count"] += 1
+    return True, limit - in_memory_store[identifier]["count"], limit, in_memory_store[identifier]["reset_time"] - current_time
 
 async def rate_limit_middleware(request: Request, api_key: Optional[str] = None):
     """
@@ -113,15 +181,8 @@ async def rate_limit_middleware(request: Request, api_key: Optional[str] = None)
     # Get the client identifier
     identifier = get_client_identifier(request, api_key)
     
-    # Apply different rate limits based on authentication
-    if api_key:
-        # Authenticated clients get higher limits
-        limit = int(os.environ.get("AUTH_RATE_LIMIT", "1000"))
-        window = int(os.environ.get("AUTH_RATE_WINDOW", "3600"))
-    else:
-        # Unauthenticated clients get lower limits
-        limit = DEFAULT_RATE_LIMIT
-        window = DEFAULT_RATE_WINDOW
+    # Get rate limit settings
+    limit, window = get_rate_limit(api_key)
     
     # Check rate limit
     is_allowed, remaining, limit, reset = check_rate_limit(identifier, limit, window)
@@ -137,5 +198,14 @@ async def rate_limit_middleware(request: Request, api_key: Optional[str] = None)
     if not is_allowed:
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded. Try again in {reset} seconds."
+            detail={
+                "error": "too_many_requests",
+                "code": "RATE_LIMIT_EXCEEDED",
+                "message": f"Rate limit exceeded. Try again in {reset} seconds.",
+                "details": {
+                    "limit": limit,
+                    "remaining": 0,
+                    "reset": reset
+                }
+            }
         ) 

@@ -12,8 +12,8 @@ from app.api.rate_limiter import rate_limit_middleware
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Create router
-router = APIRouter(prefix="/api", tags=["api"])
+# Create router with versioning
+router = APIRouter(prefix="/api/v2", tags=["api-v2"])
 
 # Initialize the analyzer with API key from environment
 api_key = os.getenv("GEMINI_API_KEY")
@@ -25,6 +25,13 @@ analyzer = GeminiAnalyzer(api_key)
 # Simple in-memory cache for results
 result_cache = {}
 CACHE_MAX_SIZE = 100
+
+# Custom error responses
+class APIError(BaseModel):
+    error: str
+    code: str
+    message: str
+    details: Optional[Dict[str, Any]] = None
 
 # Optional API key authentication
 async def verify_api_key(
@@ -46,17 +53,25 @@ async def verify_api_key(
             response.headers[header] = value
     
     # Verify API key if required
-    if os.environ.get("API_KEY_REQUIRED", "false").lower() == "true":
+    if os.environ.get("API_KEY_REQUIRED", "true").lower() == "true":
         if not x_api_key:
             raise HTTPException(
                 status_code=401,
-                detail="API key is required"
+                detail=APIError(
+                    error="unauthorized",
+                    code="API_KEY_MISSING",
+                    message="API key is required"
+                ).dict()
             )
         expected_key = os.environ.get("API_KEY")
         if not expected_key or x_api_key != expected_key:
             raise HTTPException(
                 status_code=403,
-                detail="Invalid API key"
+                detail=APIError(
+                    error="forbidden",
+                    code="INVALID_API_KEY",
+                    message="Invalid API key"
+                ).dict()
             )
     return x_api_key
 
@@ -67,7 +82,15 @@ async def verify_api_key(
     status_code=200,
     summary="Analyze text for toxicity, sentiment, and content moderation",
     description="Analyze text using Google's Gemini AI for toxicity, sentiment, and content moderation.",
-    response_description="Contains toxicity analysis, sentiment analysis, flagged words, and processing time."
+    response_description="Contains toxicity analysis, sentiment analysis, flagged words, and processing time.",
+    responses={
+        200: {"description": "Successful analysis"},
+        400: {"model": APIError, "description": "Invalid request"},
+        401: {"model": APIError, "description": "Unauthorized - Missing API key"},
+        403: {"model": APIError, "description": "Forbidden - Invalid API key"},
+        429: {"model": APIError, "description": "Too many requests"},
+        500: {"model": APIError, "description": "Internal server error"}
+    }
 )
 async def analyze_endpoint(
     request: TextRequest, 

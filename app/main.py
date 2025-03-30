@@ -32,12 +32,28 @@ app = FastAPI(
     - **Sentiment Analysis**: Determine positive, negative, or neutral sentiment
     - **Content Moderation**: Identify and categorize flagged words
     
+    ## API Versioning
+    
+    The API is versioned through the URL path:
+    - v1: `/api/v1/analyze` (Deprecated)
+    - v2: `/api/v2/analyze` (Current)
+    
+    ## Authentication
+    
+    API keys are required for all endpoints. Include your API key in the `X-API-Key` header.
+    
+    ## Rate Limiting
+    
+    Rate limits are applied per API key:
+    - Free tier: 100 requests/hour
+    - Pro tier: 1000 requests/hour
+    
     ## API Usage
     
-    Use the `/api/analyze` endpoint to analyze text content:
+    Use the `/api/v2/analyze` endpoint to analyze text content:
     
     ```
-    POST /api/analyze
+    POST /api/v2/analyze
     {
         "text": "Your text here"
     }

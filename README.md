@@ -1,48 +1,39 @@
 # ToxidAPI
 
-A powerful AI-powered text analysis API that detects toxicity, sentiment, and identifies flagged content using Google's Gemini AI.
-
-## Live Demo
-
-Visit our live demo at: [ToxidAPI Demo](https://gdg2025.vercel.app/)
+A professional API for analyzing text toxicity, sentiment, and content moderation using Google's Gemini AI.
 
 ## Features
 
-- **Toxicity Analysis**: Detect toxic content with detailed scores for multiple categories
-- **Sentiment Analysis**: Determine positive, negative, or neutral sentiment with confidence scores
-- **Content Moderation**: Identify and categorize flagged words with severity assessment
-- **Modern Dark UI**: Clean, responsive interface with real-time analysis visualization
-- **Interactive Demo**: Test the API with sample texts or your own content
-- **Progress Bars**: Visual representation of toxicity and sentiment scores
-- **Comprehensive Results**: Detailed breakdown of analysis including processing time
+- **Toxicity Analysis**: Detect toxic content with detailed category scores
+- **Sentiment Analysis**: Determine text sentiment (positive, negative, neutral)
+- **Content Moderation**: Identify and categorize flagged words
+- **API Versioning**: Supports v1 (deprecated) and v2 endpoints
+- **Rate Limiting**: Per-API key rate limiting with Redis
+- **API Key Authentication**: Secure access control
+- **Usage Tracking**: Monitor API usage and performance
+- **OpenAPI Documentation**: Interactive API documentation
 
-## Prerequisites
+## Tech Stack
 
-Before getting started, ensure you have the following installed:
+- **Backend**: FastAPI (Python 3.9+)
+- **AI Model**: Google Gemini AI
+- **Database**: Redis for rate limiting and caching
+- **Authentication**: API key-based authentication
+- **Documentation**: OpenAPI (Swagger) & ReDoc
+- **Deployment**: Vercel
 
-- [Python 3.9+](https://www.python.org/downloads/) - Used for the FastAPI backend
-- [pip](https://pip.pypa.io/en/stable/installation/) - Python package installer
-- [Git](https://git-scm.com/downloads) - For cloning the repository
-- [Vercel CLI](https://vercel.com/docs/cli) (Optional) - For deployment to Vercel
-- [Google Gemini API Key](https://aistudio.google.com/app/apikey) - Required for text analysis
-
-## Installation and Setup
+## Installation
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/sanjanatg/toxidapi.git
+   git clone https://github.com/yourusername/toxidapi.git
    cd toxidapi
    ```
 
 2. **Create a virtual environment**:
    ```bash
-   # On Windows
    python -m venv venv
-   venv\Scripts\activate
-
-   # On macOS/Linux
-   python -m venv venv
-   source venv/bin/activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**:
@@ -52,12 +43,26 @@ Before getting started, ensure you have the following installed:
 
 4. **Set up environment variables**:
    
-   Create a `.env` file in the project root:
-   ```
-   GEMINI_API_KEY=your_api_key_here
+   Copy the example environment file:
+   ```bash
+   cp .env.example .env
    ```
    
-   You can obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+   Then edit `.env` to add your own API keys:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key
+   REDIS_URL=your_redis_url
+   API_KEY_REQUIRED=true
+   RATE_LIMIT=100
+   PRO_RATE_LIMIT=1000
+   RATE_WINDOW=3600
+   ```
+   
+   > ⚠️ **SECURITY NOTE**: Never commit your `.env` file with real API keys to Git. The `.gitignore` file is configured to exclude it.
+   
+   You can obtain:
+   - Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Redis URL from [Redis Cloud](https://redis.com/cloud/overview/) or local Redis instance
 
 5. **Run the development server**:
    ```bash
@@ -71,114 +76,139 @@ Before getting started, ensure you have the following installed:
 
 ## API Documentation
 
-- [Swagger UI](/api) - Interactive API documentation
-- [ReDoc](/docs) - Alternative documentation viewer
-- [Markdown](/static/api_docs.md) - Markdown documentation
+### Authentication
 
-## Tech Stack
-
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.9+)
-- **AI Model**: [Google Gemini AI](https://ai.google.dev/)
-- **Frontend**: Vanilla JavaScript with modern CSS
-- **Deployment**: [Vercel](https://vercel.com/)
-- **Documentation**: OpenAPI (Swagger) & ReDoc
-
-## Project Structure
-
-```
-toxidapi/
-├── app/
-│   ├── api/
-│   │   ├── routes.py      # API endpoints
-│   │   └── rate_limiter.py # Rate limiting middleware
-│   ├── static/
-│   │   └── simple.html    # Frontend UI
-│   └── main.py           # FastAPI application
-├── vercel.json          # Vercel deployment config
-└── requirements.txt     # Python dependencies
-```
-
-## API Usage
-
-### Analyze Text
+All API requests require an API key. Include your API key in the `X-API-Key` header:
 
 ```bash
-curl -X POST "https://gdg2025.vercel.app/api/analyze" \
+curl -X POST "https://api.toxidapi.com/api/v2/analyze" \
+     -H "X-API-Key: your_api_key" \
      -H "Content-Type: application/json" \
      -d '{"text": "Your text here"}'
 ```
 
-### Response Format
+### Rate Limiting
 
+Rate limits are applied per API key:
+- Free tier: 100 requests/hour
+- Pro tier: 1000 requests/hour
+
+Rate limit headers are included in all responses:
+- `X-Rate-Limit-Limit`: Maximum requests per window
+- `X-Rate-Limit-Remaining`: Remaining requests in current window
+- `X-Rate-Limit-Reset`: Seconds until rate limit resets
+
+### Endpoints
+
+#### Analyze Text (v2)
+
+```bash
+POST /api/v2/analyze
+```
+
+Request body:
+```json
+{
+    "text": "Your text here"
+}
+```
+
+Response:
 ```json
 {
     "toxicity": {
-        "score": 0.8532,
-        "is_toxic": true,
+        "is_toxic": false,
+        "score": 0.1234,
         "detailed_scores": {
-            "toxicity": 0.8532,
-            "severe_toxicity": 0.6231,
-            "obscene": 0.7521,
-            "threat": 0.1234,
-            "insult": 0.8123,
-            "identity_attack": 0.2341
+            "hate": 0.1,
+            "threat": 0.05,
+            "obscene": 0.2,
+            "insult": 0.15,
+            "severe_toxic": 0.05
         }
     },
     "sentiment": {
-        "score": -0.7823,
-        "label": "negative"
+        "label": "positive",
+        "score": 0.85
     },
     "flagged_words": {
-        "count": 2,
-        "words": ["word1", "word2"],
-        "categories": {
-            "profanity": ["word1"],
-            "insult": ["word2"]
-        },
-        "severity_score": 0.7234,
-        "is_severe": true
+        "count": 0,
+        "words": [],
+        "categories": {},
+        "severity_score": 0.0,
+        "is_severe": false
     },
     "processing_time": 0.1234
 }
 ```
 
-## Deployment to Vercel
+#### Batch Analysis (v2)
 
-1. **Install Vercel CLI** (if not already installed):
+```bash
+POST /api/v2/analyze/batch
+```
+
+Request body:
+```json
+{
+    "texts": ["Text 1", "Text 2", "Text 3"]
+}
+```
+
+#### Health Check
+
+```bash
+GET /health
+```
+
+### Error Responses
+
+All errors follow this format:
+```json
+{
+    "error": "error_type",
+    "code": "ERROR_CODE",
+    "message": "Human readable error message",
+    "details": {
+        // Additional error details if available
+    }
+}
+```
+
+Common error codes:
+- `API_KEY_MISSING`: Missing API key
+- `INVALID_API_KEY`: Invalid API key
+- `RATE_LIMIT_EXCEEDED`: Rate limit exceeded
+- `INVALID_REQUEST`: Invalid request parameters
+- `INTERNAL_ERROR`: Server error
+
+## Deployment
+
+### Vercel Deployment
+
+1. **Install Vercel CLI**:
    ```bash
    npm install -g vercel
    ```
 
-2. **Log in to Vercel**:
-   ```bash
-   vercel login
-   ```
-
-3. **Deploy to Vercel**:
+2. **Deploy to Vercel**:
    ```bash
    vercel
    ```
 
-4. **Set environment variables**:
-   
-   After deployment, set up your `GEMINI_API_KEY` on the Vercel dashboard:
-   - Go to your project on the [Vercel Dashboard](https://vercel.com/dashboard)
-   - Navigate to Settings > Environment Variables
-   - Add `GEMINI_API_KEY` with your Google Gemini API key
+3. **Set environment variables in Vercel dashboard**:
+   - `GEMINI_API_KEY`
+   - `REDIS_URL`
+   - `API_KEY_REQUIRED`
+   - `RATE_LIMIT`
+   - `PRO_RATE_LIMIT`
+   - `RATE_WINDOW`
 
-5. **Deploy to production**:
-   ```bash
-   vercel --prod
-   ```
+### Custom Domain
 
-## Local Development
-
-1. Run the development server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-2. Visit `http://localhost:8000` in your browser
+1. Add your domain in the Vercel dashboard
+2. Configure DNS settings as per Vercel instructions
+3. Enable HTTPS (automatic with Vercel)
 
 ## Contributing
 
@@ -190,10 +220,4 @@ curl -X POST "https://gdg2025.vercel.app/api/analyze" \
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [Google Gemini AI](https://ai.google.dev/) for the powerful text analysis capabilities
-- [FastAPI](https://fastapi.tiangolo.com/) for the efficient API framework
-- [Vercel](https://vercel.com/) for hosting and deployment
+MIT License - see LICENSE file for details
