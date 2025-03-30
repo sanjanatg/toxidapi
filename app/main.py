@@ -112,74 +112,40 @@ async def custom_swagger_ui_html():
 
 # Root endpoint redirects to demo page
 @app.get("/", response_class=HTMLResponse)
-async def root():
+async def read_root():
     """
-    Serves the HTML demo interface for testing the API.
+    Root endpoint to serve demo page.
+    
+    Returns:
+        HTML: Demo interface for ToxidAPI
     """
     try:
-        # Read the modern.html file first (new UI)
-        modern_html_path = Path(__file__).parent / "static" / "modern.html"
-        if modern_html_path.exists():
-            try:
-                with open(modern_html_path, "r", encoding="utf-8") as file:
-                    return file.read()
-            except Exception as e:
-                logger.error(f"Error reading modern.html: {str(e)}")
-                # Continue to fallback
-                
-        # Fallback to simple.html if modern doesn't exist or couldn't be read
-        simple_html_path = Path(__file__).parent / "static" / "simple.html"
-        if simple_html_path.exists():
-            try:
-                with open(simple_html_path, "r", encoding="utf-8") as file:
-                    return file.read()
-            except Exception as e:
-                logger.error(f"Error reading simple.html: {str(e)}")
-                # Continue to fallback
-    except Exception as e:
-        logger.error(f"Error in root endpoint: {str(e)}")
-    
-    # Fallback to embedded HTML
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ToxidAPI - Text Analysis with AI</title>
-        <style>
-            /* Simplified dark theme CSS for fallback */
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background-color: #121212;
-                color: #FFFFFF;
-                margin: 0;
-                padding: 20px;
-                line-height: 1.6;
-            }
-            .container {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #1E1E1E;
-                border-radius: 8px;
-            }
-            h1, h2 { color: #9D4EDD; }
-            a { color: #9D4EDD; }
-            p { margin-bottom: 16px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>ToxidAPI</h1>
-            <p>AI-powered text analysis for toxicity, sentiment, and content moderation.</p>
-            <h2>Error Loading UI</h2>
-            <p>The full UI couldn't be loaded. You can still access the API directly.</p>
-            <p>Please check the <a href="/docs">API documentation</a> for more information.</p>
-        </div>
-    </body>
-    </html>
-    """
+        # Try to read modern.html first (our new UI)
+        html_path = Path(__file__).parent / "static" / "modern.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        try:
+            # Fallback to simple.html
+            html_path = Path(__file__).parent / "static" / "simple.html"
+            with open(html_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except FileNotFoundError:
+            # Fallback to embedded HTML if all else fails
+            return """
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>ToxidAPI Demo</title>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                </head>
+                <body>
+                    <h1>ToxidAPI Demo</h1>
+                    <p>The demo interface is not available. Please check the <a href="/docs">API documentation</a>.</p>
+                </body>
+            </html>
+            """
 
 # Health check endpoint
 @app.get("/health", include_in_schema=False)

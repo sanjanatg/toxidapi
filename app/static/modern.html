@@ -207,9 +207,739 @@
             background-color: var(--primary-color);
             width: 75%; /* Will be set dynamically */
         }
+        
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+            width: calc(100% - 260px);
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .section-header {
+            margin-bottom: 20px;
+        }
+        
+        .section-header h1 {
+            font-size: 28px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .section-header p {
+            color: var(--secondary-text);
+        }
+        
+        .card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-header h2 {
+            font-size: 18px;
+            margin: 0;
+            color: var(--text-color);
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+        }
+        
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        textarea {
+            min-height: 120px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .api-key-container {
+            margin-bottom: 20px;
+        }
+        
+        .api-key-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #api-version {
+            width: 150px;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+        
+        .samples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+        }
+        
+        .sample-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .sample-item:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(157, 78, 221, 0.1);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .results-loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .api-info {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+        
+        .documentation h3 {
+            margin: 20px 0 10px 0;
+            color: var(--primary-color);
+        }
+        
+        .documentation h4 {
+            margin: 15px 0 10px 0;
+        }
+        
+        .documentation pre {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .documentation code {
+            font-family: 'Courier New', monospace;
+        }
+        
+        .documentation ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .documentation a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .documentation a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .api-key-input {
+                flex-direction: column;
+            }
+        }
+        
+        /* Results display styles */
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .result-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border-top: 3px solid transparent;
+        }
+        
+        .result-item.toxic {
+            border-top-color: var(--error-color);
+        }
+        
+        .result-item.clean {
+            border-top-color: var(--success-color);
+        }
+        
+        .result-item.positive {
+            border-top-color: var(--success-color);
+        }
+        
+        .result-item.negative {
+            border-top-color: var(--error-color);
+        }
+        
+        .result-item.neutral {
+            border-top-color: var(--warning-color);
+        }
+        
+        .result-item.flagged {
+            border-top-color: var(--warning-color);
+        }
+        
+        .result-score {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .result-label {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        .result-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .result-details h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .result-details h4 {
+            margin: 20px 0 10px 0;
+        }
+        
+        .result-text {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .score-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .score-bar-item {
+            margin-bottom: 10px;
+        }
+        
+        .score-bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .score-bar-container {
+            height: 8px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .score-bar-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .error-message {
+            background-color: rgba(244, 67, 54, 0.1);
+            border-left: 3px solid var(--error-color);
+            padding: 15px;
+            border-radius: 4px;
+        }
+        
+        /* API Version styles */
+        .version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .version-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        
+        .version-card.current {
+            border-color: var(--primary-color);
+            background: rgba(157, 78, 221, 0.05);
+        }
+        
+        .version-card.deprecated {
+            border-color: var(--error-color);
+            background: rgba(244, 67, 54, 0.05);
+        }
+        
+        .version-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 0 8px 0 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .version-card.deprecated .version-badge {
+            background: var(--error-color);
+        }
+        
+        .version-card h3 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+        
+        .version-card p {
+            margin-bottom: 15px;
+            color: var(--secondary-text);
+            font-size: 14px;
+        }
+        
+        .version-features {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .version-features li {
+            margin-bottom: 5px;
+        }
+        
+        .deprecation-notice {
+            background: rgba(244, 67, 54, 0.2);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border-left: 3px solid var(--error-color);
+        }
+        
+        .deprecation-notice p {
+            margin: 5px 0;
+            color: var(--text-color);
+        }
+        
+        .version-notice {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .version-notice h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+        
+        .version-notice pre {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .version-notice code {
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* API Keys and History sections */
+        .login-required {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .login-required p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .api-keys-info h3, .history-info h3 {
+            color: var(--primary-color);
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .api-keys-info ul, .history-info ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .api-keys-info li, .history-info li {
+            margin-bottom: 10px;
+        }
+        
+        .api-keys-info pre {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 15px 0;
+            white-space: pre-wrap;
+        }
+        
+        .api-keys-info code {
+            font-family: 'Courier New', monospace;
+            color: var(--primary-light);
+        }
+        
+        .btn.google:hover, .btn.github:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* API Keys Management styles */
+        .api-keys-management {
+            margin-bottom: 30px;
+        }
+        
+        .api-keys-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .api-key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        
+        .key-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .key-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .key-value {
+            font-family: 'Courier New', monospace;
+            color: var(--secondary-text);
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .key-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: var(--secondary-text);
+        }
+        
+        .key-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .key-copy, .key-revoke {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            font-size: 14px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .key-revoke {
+            color: var(--error-color);
+        }
+        
+        .usage-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .usage-item h4 {
+            margin-bottom: 10px;
+        }
+        
+        .usage-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 14px;
+            color: var(--secondary-text);
+        }
+        
+        .api-keys-info {
+            margin-top: 30px;
+        }
+        
+        .api-keys-info h3 {
+            color: var(--primary-color);
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        .api-keys-info pre {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .api-keys-info code {
+            font-family: 'Courier New', monospace;
+            color: var(--primary-light);
+        }
+        
+        .api-keys-info ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .api-keys-info li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        /* Login required views */
+        .login-required {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .login-required svg {
+            margin-bottom: 20px;
+            color: var(--secondary-text);
+        }
+        
+        .login-required p {
+            margin-bottom: 20px;
+            color: var(--secondary-text);
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
+    <!-- Auth elements -->
+    <div class="auth-container">
+        <button id="login-button" class="auth-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            Sign In
+        </button>
+        
+        <div id="user-dropdown" class="user-dropdown">
+            <div class="user-info">
+                <div class="user-avatar">U</div>
+                <span>User</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+            <div class="dropdown-options">
+                <div class="dropdown-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Profile
+                </div>
+                <div class="dropdown-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                    </svg>
+                    API Keys
+                </div>
+                <div class="dropdown-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    Settings
+                </div>
+                <div class="dropdown-divider"></div>
+                <div id="logout-btn" class="dropdown-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Sign In</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                    </div>
+                    <div class="form-action">
+                        <button type="submit" class="btn primary">Sign In</button>
+                    </div>
+                </form>
+                
+                <p style="text-align: center; margin-top: 20px; color: var(--secondary-text);">Or sign in with</p>
+                
+                <div class="social-login">
+                    <button class="btn google">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 12 h8 M12 8 v8"></path>
+                        </svg>
+                        Google
+                    </button>
+                    <button class="btn github">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                        </svg>
+                        GitHub
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" style="color: var(--primary-light);">Forgot Password?</a>
+                <a href="#" style="color: var(--primary-light);">Create Account</a>
+            </div>
+        </div>
+    </div>
+
     <aside>
         <div class="sidebar-header">
             <div class="logo">
@@ -462,39 +1192,142 @@ POST /api/v2/analyze  # Current version</code></pre>
         </section>
         
         <!-- API Keys Section -->
-        <section id="api-keys-section" class="content-section">
+        <section id="api-keys-section" class="main-section">
             <div class="section-header">
-                <h1>API Keys</h1>
-                <p>Manage your API keys for authentication and increased rate limits.</p>
+                <h2>API Keys</h2>
+                <p>Generate and manage your API keys for accessing ToxidAPI</p>
             </div>
             
-            <div class="card">
-                <div class="card-header">
-                    <h2>Your API Keys</h2>
+            <div id="api-keys-login-required" class="login-required">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <p>Please sign in to manage your API keys</p>
+                <button class="btn primary login-btn">Sign In</button>
+            </div>
+            
+            <div id="api-keys-management" class="api-keys-management">
+                <div class="card">
+                    <button id="create-key-btn" class="btn primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Create New API Key
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="login-required">
-                        <p>Please log in to view and manage your API keys.</p>
-                        <button class="btn btn-primary">Log In</button>
+                
+                <h3>Your API Keys</h3>
+                <div class="api-keys-list">
+                    <div class="api-key-item">
+                        <div class="key-info">
+                            <span class="key-name">Production Key</span>
+                            <span class="key-value">toxid_demo_key_1234</span>
+                            <div class="key-meta">
+                                <span class="key-created">Created: March 28, 2023</span>
+                                <span class="key-tier">Tier: Premium</span>
+                            </div>
+                        </div>
+                        <div class="key-actions">
+                            <button class="btn key-copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn key-revoke">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                Revoke
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="api-keys-info">
-                        <h3>About API Keys</h3>
-                        <p>API keys provide the following benefits:</p>
-                        <ul>
-                            <li><strong>Authentication</strong>: Secure access to the API</li>
-                            <li><strong>Higher Rate Limits</strong>: Free tier (100 req/hour) vs Pro tier (1000 req/hour)</li>
-                            <li><strong>Usage Tracking</strong>: Monitor your API usage</li>
-                        </ul>
-                        
-                        <h3>How to Use API Keys</h3>
-                        <p>Include your API key in the <code>X-API-Key</code> header with each request:</p>
-                        <pre><code>curl -X POST "https://api.toxidapi.com/api/v2/analyze" \
-     -H "X-API-Key: your_api_key" \
-     -H "Content-Type: application/json" \
-     -d '{"text": "Your text here"}'</code></pre>
+                    <div class="api-key-item">
+                        <div class="key-info">
+                            <span class="key-name">Development Key</span>
+                            <span class="key-value">toxid_demo_key_5678</span>
+                            <div class="key-meta">
+                                <span class="key-created">Created: March 20, 2023</span>
+                                <span class="key-tier">Tier: Standard</span>
+                            </div>
+                        </div>
+                        <div class="key-actions">
+                            <button class="btn key-copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn key-revoke">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                Revoke
+                            </button>
+                        </div>
                     </div>
                 </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3>API Key Usage</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="usage-stats">
+                            <div class="usage-item">
+                                <h4>Production Key</h4>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 65%;"></div>
+                                </div>
+                                <div class="usage-detail">
+                                    <span>650/1000 requests used</span>
+                                    <span>Premium Tier</span>
+                                </div>
+                            </div>
+                            
+                            <div class="usage-item">
+                                <h4>Development Key</h4>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 25%;"></div>
+                                </div>
+                                <div class="usage-detail">
+                                    <span>25/100 requests used</span>
+                                    <span>Standard Tier</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="api-keys-info">
+                <h3>About API Keys</h3>
+                <p>API keys are used to authenticate your requests to the ToxidAPI. Each API key has its own rate limit and usage tracking.</p>
+                
+                <h3>Using Your API Key</h3>
+                <p>Include your API key in the <code>X-API-Key</code> header of your HTTP requests:</p>
+                <pre><code>curl -X POST "https://api.toxidapi.com/api/v2/analyze"
+     -H "X-API-Key: toxid_demo_key_1234"
+     -H "Content-Type: application/json"
+     -d '{"text": "Your text to analyze"}'</code></pre>
+                
+                <h3>API Key Security</h3>
+                <ul>
+                    <li>Never share your API keys in publicly accessible areas such as GitHub, client-side code, or forums.</li>
+                    <li>Keep your API keys secure and regularly rotate them for enhanced security.</li>
+                    <li>Generate different API keys for different environments (development, testing, production).</li>
+                </ul>
             </div>
         </section>
         
@@ -1018,255 +1851,403 @@ POST /api/v2/analyze  # Current version</code></pre>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Auth functionality
+            const loginButton = document.getElementById('login-button');
+            const loginModal = document.getElementById('login-modal');
+            const closeModal = document.querySelector('.close-modal');
+            const loginForm = document.getElementById('login-form');
+            const userDropdown = document.getElementById('user-dropdown');
+            const dropdownOptions = document.querySelector('.dropdown-options');
+            const userInfo = document.querySelector('.user-info');
+            const logoutBtn = document.getElementById('logout-btn');
+            const loginBtns = document.querySelectorAll('.login-btn');
+            
+            // API Keys Management UI elements
+            const apiKeysLoginRequired = document.getElementById('api-keys-login-required');
+            const apiKeysManagement = document.getElementById('api-keys-management');
+            
+            // Mock authentication state
+            let isAuthenticated = false;
+            
+            // Show login modal
+            function showLoginModal() {
+                loginModal.style.display = 'flex';
+            }
+            
+            // Hide login modal
+            function hideLoginModal() {
+                loginModal.style.display = 'none';
+            }
+            
+            // Toggle dropdown
+            function toggleDropdown() {
+                const isVisible = dropdownOptions.style.display === 'block';
+                dropdownOptions.style.display = isVisible ? 'none' : 'block';
+            }
+            
+            // Handle login
+            function handleLogin(e) {
+                e.preventDefault();
+                
+                // Mock login - in a real app, you would validate credentials
+                isAuthenticated = true;
+                
+                // Update UI
+                loginButton.style.display = 'none';
+                userDropdown.style.display = 'block';
+                hideLoginModal();
+                
+                // Update API Keys section
+                if (apiKeysLoginRequired && apiKeysManagement) {
+                    apiKeysLoginRequired.style.display = 'none';
+                    apiKeysManagement.style.display = 'block';
+                }
+                
+                // Show success notification
+                showNotification('Signed in successfully!');
+            }
+            
+            // Handle logout
+            function handleLogout() {
+                isAuthenticated = false;
+                
+                // Update UI
+                loginButton.style.display = 'block';
+                userDropdown.style.display = 'none';
+                dropdownOptions.style.display = 'none';
+                
+                // Update API Keys section
+                if (apiKeysLoginRequired && apiKeysManagement) {
+                    apiKeysLoginRequired.style.display = 'flex';
+                    apiKeysManagement.style.display = 'none';
+                }
+                
+                // Show success notification
+                showNotification('Signed out successfully!');
+            }
+            
+            // Show notification
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Event listeners
+            loginButton.addEventListener('click', showLoginModal);
+            closeModal.addEventListener('click', hideLoginModal);
+            loginForm.addEventListener('submit', handleLogin);
+            userInfo.addEventListener('click', toggleDropdown);
+            logoutBtn.addEventListener('click', handleLogout);
+            
+            // Add login functionality to all login buttons
+            loginBtns.forEach(btn => {
+                btn.addEventListener('click', showLoginModal);
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(e) {
+                if (e.target === loginModal) {
+                    hideLoginModal();
+                }
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userInfo.contains(e.target) && isAuthenticated) {
+                    dropdownOptions.style.display = 'none';
+                }
+            });
+            
+            // API key management functionality
+            const copyButtons = document.querySelectorAll('.key-copy');
+            const revokeButtons = document.querySelectorAll('.key-revoke');
+            const createKeyBtn = document.getElementById('create-key-btn');
+            
+            // Copy API key functionality
+            copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const keyValue = this.closest('.api-key-item').querySelector('.key-value').textContent;
+                    
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(keyValue).then(() => {
+                        showNotification('API key copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Could not copy text: ', err);
+                    });
+                });
+            });
+            
+            // Revoke API key functionality
+            revokeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+                        // In a real app, you would call an API to revoke the key
+                        this.closest('.api-key-item').remove();
+                        showNotification('API key revoked successfully!');
+                    }
+                });
+            });
+            
+            // Create new API key functionality
+            if (createKeyBtn) {
+                createKeyBtn.addEventListener('click', function() {
+                    // In a real app, you would call an API to create a new key
+                    const keysList = document.querySelector('.api-keys-list');
+                    
+                    // Generate a random key with a safe pattern
+                    const randomKey = 'toxid_demo_key_' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                    
+                    // Create a new key element
+                    const newKeyItem = document.createElement('div');
+                    newKeyItem.className = 'api-key-item';
+                    newKeyItem.innerHTML = `
+                        <div class="key-info">
+                            <span class="key-name">New Key</span>
+                            <span class="key-value">${randomKey}</span>
+                            <div class="key-meta">
+                                <span class="key-created">Created: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                <span class="key-tier">Tier: Standard</span>
+                            </div>
+                        </div>
+                        <div class="key-actions">
+                            <button class="btn key-copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                            <button class="btn key-revoke">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                                Revoke
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add to the list
+                    keysList.prepend(newKeyItem);
+                    
+                    // Add event listeners to new buttons
+                    const newCopyBtn = newKeyItem.querySelector('.key-copy');
+                    const newRevokeBtn = newKeyItem.querySelector('.key-revoke');
+                    
+                    newCopyBtn.addEventListener('click', function() {
+                        const keyValue = this.closest('.api-key-item').querySelector('.key-value').textContent;
+                        navigator.clipboard.writeText(keyValue).then(() => {
+                            showNotification('API key copied to clipboard!');
+                        }).catch(err => {
+                            console.error('Could not copy text: ', err);
+                        });
+                    });
+                    
+                    newRevokeBtn.addEventListener('click', function() {
+                        if (confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
+                            this.closest('.api-key-item').remove();
+                            showNotification('API key revoked successfully!');
+                        }
+                    });
+                    
+                    // Show notification
+                    showNotification('New API key created successfully!');
+                });
+            }
+            
             // Tab navigation
             const navLinks = document.querySelectorAll('nav a');
             const sections = document.querySelectorAll('main > section');
             
-            // Hide all sections except the first one
-            sections.forEach((section, index) => {
-                if (index !== 0) {
+            // Function to show specific section
+            function showSection(sectionId) {
+                // Hide all sections
+                sections.forEach(section => {
                     section.style.display = 'none';
+                });
+                
+                // Show the target section
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    targetSection.style.display = 'block';
+                    
+                    // Update active nav link
+                    navLinks.forEach(link => {
+                        if (link.getAttribute('data-section') === sectionId) {
+                            link.classList.add('active');
+                        } else {
+                            link.classList.remove('active');
+                        }
+                    });
+                    
+                    // Special handling for API Keys section
+                    if (sectionId === 'api-keys-section') {
+                        if (isAuthenticated) {
+                            if (apiKeysLoginRequired) apiKeysLoginRequired.style.display = 'none';
+                            if (apiKeysManagement) apiKeysManagement.style.display = 'block';
+                        } else {
+                            if (apiKeysLoginRequired) apiKeysLoginRequired.style.display = 'flex';
+                            if (apiKeysManagement) apiKeysManagement.style.display = 'none';
+                        }
+                    }
                 }
-            });
+            }
             
-            // Add active class to the first link
-            navLinks[0].classList.add('active');
-            
-            // Handle navigation clicks
+            // Set up click handlers for navigation
             navLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    showSection(sectionId);
                     
-                    // Remove active class from all links
-                    navLinks.forEach(link => link.classList.remove('active'));
-                    
-                    // Add active class to clicked link
-                    this.classList.add('active');
-                    
-                    // Hide all sections
-                    sections.forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    
-                    // Show the corresponding section
-                    const targetId = this.getAttribute('href').substring(1);
-                    if (targetId === 'analyze') {
-                        document.getElementById('analyze-section').style.display = 'block';
-                    } else if (targetId === 'documentation') {
-                        document.getElementById('api-docs-section').style.display = 'block';
-                    } else if (targetId === 'api-keys') {
-                        document.getElementById('api-keys-section').style.display = 'block';
-                    } else if (targetId === 'versions') {
-                        document.getElementById('version-section').style.display = 'block';
-                    } else if (targetId === 'history') {
-                        document.getElementById('history').style.display = 'block';
+                    // For mobile, close the sidebar after navigation
+                    if (window.innerWidth < 768) {
+                        document.querySelector('aside').classList.remove('open');
                     }
                 });
             });
             
-            // Sample text functionality
-            const sampleTexts = document.querySelectorAll('.sample-item');
-            const textarea = document.getElementById('text-to-analyze');
+            // Check for default section from URL hash or show the first section
+            const hash = window.location.hash.substring(1);
+            if (hash && document.getElementById(hash)) {
+                showSection(hash);
+            } else {
+                // Show analyze section by default
+                showSection('analyze-section');
+            }
             
+            // Initialize API Key management UI
+            if (apiKeysManagement) {
+                apiKeysManagement.style.display = 'none';
+            }
+            
+            // Handle the analyze form
+            const analyzeForm = document.getElementById('analyze-form');
+            const analyzeBtn = document.getElementById('analyze-button');
+            const clearBtn = document.getElementById('clear-button');
+            const textarea = document.querySelector('#analyze-form textarea');
+            const apiKeyInput = document.querySelector('#analyze-form input[type="text"]');
+            const versionSelect = document.querySelector('#analyze-form select');
+            const resultsContainer = document.getElementById('results-container');
+            const loadingSpinner = document.querySelector('.loading-spinner');
+            const resultsContent = document.querySelector('.results-content');
+            const errorMessage = document.querySelector('.error-message');
+            const sampleTexts = document.querySelectorAll('.sample-item');
+            
+            // Set up sample text click handlers
             sampleTexts.forEach(sample => {
                 sample.addEventListener('click', function() {
-                    textarea.value = this.textContent.trim();
+                    textarea.value = this.textContent;
                 });
             });
             
-            // Clear button functionality
-            document.getElementById('clear-button').addEventListener('click', function() {
-                textarea.value = '';
-                document.getElementById('results-container').style.display = 'none';
-            });
-            
-            // Analyze button functionality
-            document.getElementById('analyze-button').addEventListener('click', async function(e) {
-                e.preventDefault();
-                
-                const text = textarea.value.trim();
-                const apiKey = document.getElementById('api-key').value.trim();
-                const apiVersion = document.getElementById('api-version').value;
-                
-                if (!text) {
-                    alert('Please enter some text to analyze.');
-                    return;
-                }
-                
-                // Show loading state
-                document.getElementById('results-container').style.display = 'block';
-                
-                // Make sure results elements exist
-                const loadingSpinner = document.querySelector('.results-loading');
-                const resultsContent = document.querySelector('.results-content');
-                
-                if (loadingSpinner) loadingSpinner.style.display = 'block';
-                if (resultsContent) resultsContent.style.display = 'none';
-                
-                // Always use mock data since backend may not be available
-                setTimeout(() => {
-                    // Generate mock data based on input text
-                    let mockData = generateMockAnalysisResults(text);
+            // Handle form submission
+            if (analyzeForm) {
+                analyzeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    // Hide loading spinner
-                    if (loadingSpinner) loadingSpinner.style.display = 'none';
+                    const text = textarea.value.trim();
                     
-                    // Process and display mock results
-                    if (resultsContent) {
-                        resultsContent.style.display = 'block';
-                        displayResults(mockData, resultsContent);
+                    if (!text) {
+                        showNotification('Please enter some text to analyze.');
+                        return;
                     }
                     
-                    // Update mock rate limit in sidebar
-                    updateMockRateLimits();
-                }, 1500);
-            });
-            
-            // Helper function to update rate limits in the sidebar
-            function updateRateLimits(limit, remaining) {
-                const rateLimitElement = document.getElementById('rate-limit-count');
-                const progressBar = document.getElementById('rate-limit-progress');
-                
-                if (rateLimitElement && progressBar) {
-                    rateLimitElement.textContent = `${remaining}/${limit}`;
-                    const percentage = (remaining / limit) * 100;
-                    progressBar.style.width = `${percentage}%`;
+                    // Show loading state
+                    resultsContainer.style.display = 'block';
+                    loadingSpinner.style.display = 'flex';
+                    resultsContent.style.display = 'none';
+                    if (errorMessage) errorMessage.style.display = 'none';
                     
-                    // Update color based on remaining percentage
-                    if (percentage > 70) {
-                        progressBar.style.backgroundColor = 'var(--success-color)';
-                    } else if (percentage > 30) {
-                        progressBar.style.backgroundColor = 'var(--warning-color)';
-                    } else {
-                        progressBar.style.backgroundColor = 'var(--error-color)';
-                    }
-                    
-                    // Show the rate limit section in the sidebar
-                    const container = document.getElementById('rate-limit-container');
-                    if (container) container.style.display = 'block';
-                }
-            }
-            
-            // Helper function for mock rate limits in demo mode
-            function updateMockRateLimits() {
-                const mockLimit = 100;
-                const mockRemaining = Math.floor(Math.random() * 40) + 60; // Random between 60-100
-                updateRateLimits(mockLimit, mockRemaining);
-            }
-            
-            // Helper function to display results
-            function displayResults(data, container) {
-                // Make sure we have a container to display results
-                if (!container) return;
-                
-                let html = `
-                    <div class="result-summary">
-                        <div class="result-item ${data.toxicity.score > 0.5 ? 'toxic' : 'clean'}">
-                            <h3>Toxicity</h3>
-                            <div class="result-score">${(data.toxicity.score * 100).toFixed(1)}%</div>
-                            <div class="result-label">${data.toxicity.score > 0.5 ? 'Toxic' : 'Clean'}</div>
-                        </div>
-                        <div class="result-item ${data.sentiment.score > 0.25 ? 'positive' : (data.sentiment.score < -0.25 ? 'negative' : 'neutral')}">
-                            <h3>Sentiment</h3>
-                            <div class="result-score">${data.sentiment.score.toFixed(2)}</div>
-                            <div class="result-label">${data.sentiment.score > 0.25 ? 'Positive' : (data.sentiment.score < -0.25 ? 'Negative' : 'Neutral')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="result-details">
-                        <h3>Analysis Details</h3>
-                        <div class="result-text">
-                            <strong>Text analyzed:</strong> "${data.text.substring(0, 100)}${data.text.length > 100 ? '...' : ''}"
-                        </div>
+                    // Mock API call with timeout
+                    setTimeout(() => {
+                        // Hide loading spinner
+                        loadingSpinner.style.display = 'none';
                         
-                        <h4>Detailed Scores</h4>
-                        <div class="score-bars">
-                            ${Object.entries(data.toxicity.categories || {}).map(([key, value]) => `
-                                <div class="score-bar-item">
-                                    <div class="score-bar-label">
-                                        <span>${key}</span>
-                                        <span>${(value * 100).toFixed(1)}%</span>
-                                    </div>
-                                    <div class="score-bar-container">
-                                        <div class="score-bar-fill" style="width: ${value * 100}%"></div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="raw-data">
-                        <details>
-                            <summary>Raw JSON Response</summary>
-                            <pre>${JSON.stringify(data, null, 2)}</pre>
-                        </details>
-                    </div>
-                `;
-                
-                container.innerHTML = html;
-                
-                // Update processing time
-                const timeElement = document.querySelector('.processing-time');
-                if (timeElement) {
-                    timeElement.textContent = `${data.processing_time}s`;
-                }
+                        // Generate mock results
+                        const toxicityScore = Math.random();
+                        const sentimentScore = Math.random() * 2 - 1; // -1 to 1
+                        
+                        // Determine toxicity classification
+                        let toxicityClass, toxicityLabel;
+                        if (toxicityScore < 0.3) {
+                            toxicityClass = 'clean';
+                            toxicityLabel = 'Clean';
+                        } else if (toxicityScore < 0.6) {
+                            toxicityClass = 'moderate';
+                            toxicityLabel = 'Potentially Offensive';
+                        } else {
+                            toxicityClass = 'toxic';
+                            toxicityLabel = 'Toxic';
+                        }
+                        
+                        // Determine sentiment classification
+                        let sentimentClass, sentimentLabel;
+                        if (sentimentScore < -0.3) {
+                            sentimentClass = 'negative';
+                            sentimentLabel = 'Negative';
+                        } else if (sentimentScore < 0.3) {
+                            sentimentClass = 'neutral';
+                            sentimentLabel = 'Neutral';
+                        } else {
+                            sentimentClass = 'positive';
+                            sentimentLabel = 'Positive';
+                        }
+                        
+                        // Update results content
+                        const toxicityScoreEl = document.querySelector('.toxicity-score');
+                        const toxicityLabelEl = document.querySelector('.toxicity-label');
+                        const sentimentScoreEl = document.querySelector('.sentiment-score');
+                        const sentimentLabelEl = document.querySelector('.sentiment-label');
+                        
+                        if (toxicityScoreEl) toxicityScoreEl.textContent = Math.round(toxicityScore * 100) + '%';
+                        if (toxicityLabelEl) {
+                            toxicityLabelEl.textContent = toxicityLabel;
+                            toxicityLabelEl.className = 'label toxicity-label ' + toxicityClass;
+                        }
+                        
+                        if (sentimentScoreEl) sentimentScoreEl.textContent = sentimentScore.toFixed(2);
+                        if (sentimentLabelEl) {
+                            sentimentLabelEl.textContent = sentimentLabel;
+                            sentimentLabelEl.className = 'label sentiment-label ' + sentimentClass;
+                        }
+                        
+                        // Show results
+                        resultsContent.style.display = 'block';
+                    }, 1500);
+                });
             }
             
-            // Function to generate mock analysis results for demo mode
-            function generateMockAnalysisResults(text) {
-                // Very simple sentiment detection
-                let sentimentScore = 0;
-                const positiveWords = ['good', 'great', 'excellent', 'amazing', 'happy', 'love', 'best', 'wonderful', 'fantastic'];
-                const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'sad', 'hate', 'worst', 'poor', 'fail'];
-                
-                const lowerText = text.toLowerCase();
-                
-                // Count positive and negative words
-                positiveWords.forEach(word => {
-                    if (lowerText.includes(word)) sentimentScore += 0.2;
+            // Clear form
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (textarea) textarea.value = '';
+                    if (apiKeyInput) apiKeyInput.value = '';
+                    if (resultsContainer) resultsContainer.style.display = 'none';
                 });
-                
-                negativeWords.forEach(word => {
-                    if (lowerText.includes(word)) sentimentScore -= 0.2;
+            }
+            
+            // Toggle mobile sidebar
+            const menuToggle = document.getElementById('menu-toggle');
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function() {
+                    const sidebar = document.querySelector('aside');
+                    sidebar.classList.toggle('open');
                 });
-                
-                // Limit score to -1 to 1 range
-                sentimentScore = Math.max(-1, Math.min(1, sentimentScore));
-                
-                // Simple toxicity detection (very naive implementation for demo)
-                const toxicWords = ['stupid', 'idiot', 'hate', 'kill', 'die', 'sucks', 'dumb', 'crap', 'damn', 'hell', 'f***', 'shit', 'f***ing'];
-                let toxicityScore = 0;
-                
-                toxicWords.forEach(word => {
-                    if (lowerText.includes(word)) toxicityScore += 0.25;
-                });
-                
-                // Extra check for profanity
-                if (lowerText.includes('f***')) toxicityScore += 0.4;
-                if (lowerText.includes('sh*t')) toxicityScore += 0.3;
-                
-                // Limit score to 0-1 range
-                toxicityScore = Math.min(1, toxicityScore);
-                
-                // Mock data structure that matches the API response
-                return {
-                    "text": text,
-                    "toxicity": {
-                        "score": toxicityScore,
-                        "label": toxicityScore > 0.5 ? "toxic" : "clean",
-                        "categories": {
-                            "profanity": Math.min(1, toxicityScore * 1.2),
-                            "insult": Math.random() * toxicityScore,
-                            "threat": Math.random() * toxicityScore * 0.8,
-                            "identity_attack": Math.random() * toxicityScore * 0.5
-                        }
-                    },
-                    "sentiment": {
-                        "score": sentimentScore,
-                        "label": sentimentScore > 0.25 ? "positive" : (sentimentScore < -0.25 ? "negative" : "neutral")
-                    },
-                    "processing_time": (Math.random() * 0.5 + 0.2).toFixed(3) // Random time between 0.2-0.7s
-                };
             }
         });
     </script>
