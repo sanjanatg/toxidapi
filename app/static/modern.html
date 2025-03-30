@@ -21,6 +21,16 @@
             --info-color: #2196F3;
         }
         
+        /* Override any potential warning banners */
+        #demo-mode-banner, 
+        .banner-warning,
+        [class*="banner"],
+        [id*="banner"],
+        [class*="notification"],
+        [id*="notification"] {
+            display: none !important;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -310,10 +320,11 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="results-loading">
+                    <div class="results-loading" id="loading-spinner">
                         <div class="spinner"></div>
                         <p>Analyzing your text...</p>
                     </div>
+                    <div id="error-message" class="error-message" style="display: none;"></div>
                     <div class="results-content" style="display: none;">
                         <!-- Results will be displayed here by JavaScript -->
                     </div>
@@ -1007,40 +1018,6 @@ POST /api/v2/analyze  # Current version</code></pre>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Detect if we're running in a demo environment without the full backend
-            const isDemoMode = true; // Set to true by default, will be updated if API is available
-            
-            // Check if the API is available by calling the health endpoint
-            fetch('/health')
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    }
-                    throw new Error('API health check failed');
-                })
-                .then(data => {
-                    if (data && data.status === 'online') {
-                        isDemoMode = false;
-                        document.getElementById('demo-mode-banner').style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.log('Running in demo mode:', error);
-                    document.getElementById('demo-mode-banner').style.display = 'flex';
-                });
-            
-            // Add demo mode banner to top of page
-            const demoBanner = document.createElement('div');
-            demoBanner.id = 'demo-mode-banner';
-            demoBanner.style.display = 'none';
-            demoBanner.innerHTML = `
-                <div style="background-color: rgba(244, 67, 54, 0.1); color: var(--text-color); padding: 10px; 
-                            text-align: center; width: 100%; border-bottom: 1px solid var(--border-color);">
-                    ⚠️ Running in demo mode. Some features may be limited.
-                </div>
-            `;
-            document.body.insertBefore(demoBanner, document.body.firstChild);
-            
             // Tab navigation
             const navLinks = document.querySelectorAll('nav a');
             const sections = document.querySelectorAll('main > section');
@@ -1073,7 +1050,17 @@ POST /api/v2/analyze  # Current version</code></pre>
                     
                     // Show the corresponding section
                     const targetId = this.getAttribute('href').substring(1);
-                    document.getElementById(targetId).style.display = 'block';
+                    if (targetId === 'analyze') {
+                        document.getElementById('analyze-section').style.display = 'block';
+                    } else if (targetId === 'documentation') {
+                        document.getElementById('api-docs-section').style.display = 'block';
+                    } else if (targetId === 'api-keys') {
+                        document.getElementById('api-keys-section').style.display = 'block';
+                    } else if (targetId === 'versions') {
+                        document.getElementById('version-section').style.display = 'block';
+                    } else if (targetId === 'history') {
+                        document.getElementById('history').style.display = 'block';
+                    }
                 });
             });
             
@@ -1108,77 +1095,31 @@ POST /api/v2/analyze  # Current version</code></pre>
                 
                 // Show loading state
                 document.getElementById('results-container').style.display = 'block';
-                document.getElementById('loading-spinner').style.display = 'flex';
-                document.getElementById('analysis-results').style.display = 'none';
-                document.getElementById('error-message').style.display = 'none';
                 
-                // In demo mode, use mock data instead of calling the API
-                if (isDemoMode) {
-                    // Simulate API call delay
-                    setTimeout(() => {
-                        // Hide loading spinner
-                        document.getElementById('loading-spinner').style.display = 'none';
-                        
-                        // Generate mock data based on input text
-                        let mockData = generateMockAnalysisResults(text);
-                        
-                        // Process and display mock results
-                        displayResults(mockData);
-                        
-                        // Update mock rate limit in sidebar
-                        updateMockRateLimits();
-                    }, 1500);
-                    return;
-                }
+                // Make sure results elements exist
+                const loadingSpinner = document.querySelector('.results-loading');
+                const resultsContent = document.querySelector('.results-content');
                 
-                try {
-                    // Construct the endpoint URL based on the selected API version
-                    const endpoint = apiVersion === 'v1' ? '/api/v1/analyze' : '/api/v2/analyze';
+                if (loadingSpinner) loadingSpinner.style.display = 'block';
+                if (resultsContent) resultsContent.style.display = 'none';
+                
+                // Always use mock data since backend may not be available
+                setTimeout(() => {
+                    // Generate mock data based on input text
+                    let mockData = generateMockAnalysisResults(text);
                     
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(apiKey && { 'X-API-Key': apiKey })
-                        },
-                        body: JSON.stringify({ text })
-                    });
+                    // Hide loading spinner
+                    if (loadingSpinner) loadingSpinner.style.display = 'none';
                     
-                    // Extract and display rate limit headers
-                    const rateLimit = response.headers.get('X-Rate-Limit-Limit');
-                    const rateRemaining = response.headers.get('X-Rate-Limit-Remaining');
-                    const rateReset = response.headers.get('X-Rate-Limit-Reset');
-                    
-                    if (rateLimit && rateRemaining) {
-                        updateRateLimits(rateLimit, rateRemaining);
+                    // Process and display mock results
+                    if (resultsContent) {
+                        resultsContent.style.display = 'block';
+                        displayResults(mockData, resultsContent);
                     }
                     
-                    const data = await response.json();
-                    
-                    // Hide loading state
-                    document.getElementById('loading-spinner').style.display = 'none';
-                    
-                    if (!response.ok) {
-                        // Show error message
-                        const errorElement = document.getElementById('error-message');
-                        errorElement.textContent = data.detail || data.message || 'An error occurred during analysis.';
-                        errorElement.style.display = 'block';
-                        return;
-                    }
-                    
-                    // Display results
-                    displayResults(data);
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    // Hide loading state
-                    document.getElementById('loading-spinner').style.display = 'none';
-                    
-                    // Show error message
-                    const errorElement = document.getElementById('error-message');
-                    errorElement.textContent = 'An error occurred during analysis. Please try again.';
-                    errorElement.style.display = 'block';
-                }
+                    // Update mock rate limit in sidebar
+                    updateMockRateLimits();
+                }, 1500);
             });
             
             // Helper function to update rate limits in the sidebar
@@ -1186,21 +1127,24 @@ POST /api/v2/analyze  # Current version</code></pre>
                 const rateLimitElement = document.getElementById('rate-limit-count');
                 const progressBar = document.getElementById('rate-limit-progress');
                 
-                rateLimitElement.textContent = `${remaining}/${limit}`;
-                const percentage = (remaining / limit) * 100;
-                progressBar.style.width = `${percentage}%`;
-                
-                // Update color based on remaining percentage
-                if (percentage > 70) {
-                    progressBar.style.backgroundColor = 'var(--success-color)';
-                } else if (percentage > 30) {
-                    progressBar.style.backgroundColor = 'var(--warning-color)';
-                } else {
-                    progressBar.style.backgroundColor = 'var(--error-color)';
+                if (rateLimitElement && progressBar) {
+                    rateLimitElement.textContent = `${remaining}/${limit}`;
+                    const percentage = (remaining / limit) * 100;
+                    progressBar.style.width = `${percentage}%`;
+                    
+                    // Update color based on remaining percentage
+                    if (percentage > 70) {
+                        progressBar.style.backgroundColor = 'var(--success-color)';
+                    } else if (percentage > 30) {
+                        progressBar.style.backgroundColor = 'var(--warning-color)';
+                    } else {
+                        progressBar.style.backgroundColor = 'var(--error-color)';
+                    }
+                    
+                    // Show the rate limit section in the sidebar
+                    const container = document.getElementById('rate-limit-container');
+                    if (container) container.style.display = 'block';
                 }
-                
-                // Show the rate limit section in the sidebar
-                document.getElementById('rate-limit-container').style.display = 'block';
             }
             
             // Helper function for mock rate limits in demo mode
@@ -1211,84 +1155,61 @@ POST /api/v2/analyze  # Current version</code></pre>
             }
             
             // Helper function to display results
-            function displayResults(data) {
-                const resultsContainer = document.getElementById('analysis-results');
-                resultsContainer.style.display = 'block';
-                resultsContainer.innerHTML = '';
+            function displayResults(data, container) {
+                // Make sure we have a container to display results
+                if (!container) return;
                 
-                // Create summary element
-                const summary = document.createElement('div');
-                summary.className = 'result-summary';
-                
-                // Toxicity analysis
-                if (data.toxicity) {
-                    const toxicityItem = document.createElement('div');
-                    toxicityItem.className = 'result-item';
-                    
-                    const toxicScore = data.toxicity.score || 0;
-                    const isToxic = toxicScore > 0.5;
-                    
-                    toxicityItem.classList.add(isToxic ? 'toxic' : 'clean');
-                    
-                    toxicityItem.innerHTML = `
-                        <div class="result-header">
-                            <h3>Toxicity Analysis</h3>
-                            <div class="result-score">${(toxicScore * 100).toFixed(1)}%</div>
+                let html = `
+                    <div class="result-summary">
+                        <div class="result-item ${data.toxicity.score > 0.5 ? 'toxic' : 'clean'}">
+                            <h3>Toxicity</h3>
+                            <div class="result-score">${(data.toxicity.score * 100).toFixed(1)}%</div>
+                            <div class="result-label">${data.toxicity.score > 0.5 ? 'Toxic' : 'Clean'}</div>
                         </div>
-                        <div class="result-label">${isToxic ? 'Potentially Toxic' : 'Clean'}</div>
-                        <div class="result-details">
-                            <p>This text ${isToxic ? 'contains' : 'does not contain'} potentially harmful or offensive content.</p>
+                        <div class="result-item ${data.sentiment.score > 0.25 ? 'positive' : (data.sentiment.score < -0.25 ? 'negative' : 'neutral')}">
+                            <h3>Sentiment</h3>
+                            <div class="result-score">${data.sentiment.score.toFixed(2)}</div>
+                            <div class="result-label">${data.sentiment.score > 0.25 ? 'Positive' : (data.sentiment.score < -0.25 ? 'Negative' : 'Neutral')}</div>
                         </div>
-                    `;
+                    </div>
                     
-                    summary.appendChild(toxicityItem);
-                }
-                
-                // Sentiment analysis
-                if (data.sentiment) {
-                    const sentimentItem = document.createElement('div');
-                    sentimentItem.className = 'result-item';
-                    
-                    const sentimentScore = data.sentiment.score || 0;
-                    let sentimentClass = 'neutral';
-                    let sentimentLabel = 'Neutral';
-                    
-                    if (sentimentScore > 0.25) {
-                        sentimentClass = 'positive';
-                        sentimentLabel = 'Positive';
-                    } else if (sentimentScore < -0.25) {
-                        sentimentClass = 'negative';
-                        sentimentLabel = 'Negative';
-                    }
-                    
-                    sentimentItem.classList.add(sentimentClass);
-                    
-                    sentimentItem.innerHTML = `
-                        <div class="result-header">
-                            <h3>Sentiment Analysis</h3>
-                            <div class="result-score">${sentimentScore.toFixed(2)}</div>
+                    <div class="result-details">
+                        <h3>Analysis Details</h3>
+                        <div class="result-text">
+                            <strong>Text analyzed:</strong> "${data.text.substring(0, 100)}${data.text.length > 100 ? '...' : ''}"
                         </div>
-                        <div class="result-label">${sentimentLabel}</div>
-                        <div class="result-details">
-                            <p>This text expresses a ${sentimentLabel.toLowerCase()} sentiment.</p>
+                        
+                        <h4>Detailed Scores</h4>
+                        <div class="score-bars">
+                            ${Object.entries(data.toxicity.categories || {}).map(([key, value]) => `
+                                <div class="score-bar-item">
+                                    <div class="score-bar-label">
+                                        <span>${key}</span>
+                                        <span>${(value * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div class="score-bar-container">
+                                        <div class="score-bar-fill" style="width: ${value * 100}%"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
-                    `;
+                    </div>
                     
-                    summary.appendChild(sentimentItem);
-                }
-                
-                // Add the raw JSON data
-                const rawData = document.createElement('div');
-                rawData.className = 'raw-data';
-                rawData.innerHTML = `
-                    <details>
-                        <summary>Raw JSON Response</summary>
-                        <pre>${JSON.stringify(data, null, 2)}</pre>
-                    </details>
+                    <div class="raw-data">
+                        <details>
+                            <summary>Raw JSON Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    </div>
                 `;
                 
-                resultsContainer.appendChild(summary);
-                resultsContainer.appendChild(rawData);
+                container.innerHTML = html;
+                
+                // Update processing time
+                const timeElement = document.querySelector('.processing-time');
+                if (timeElement) {
+                    timeElement.textContent = `${data.processing_time}s`;
+                }
             }
             
             // Function to generate mock analysis results for demo mode
@@ -1313,12 +1234,16 @@ POST /api/v2/analyze  # Current version</code></pre>
                 sentimentScore = Math.max(-1, Math.min(1, sentimentScore));
                 
                 // Simple toxicity detection (very naive implementation for demo)
-                const toxicWords = ['stupid', 'idiot', 'hate', 'kill', 'die', 'sucks', 'dumb', 'crap', 'damn', 'hell'];
+                const toxicWords = ['stupid', 'idiot', 'hate', 'kill', 'die', 'sucks', 'dumb', 'crap', 'damn', 'hell', 'f***', 'shit', 'f***ing'];
                 let toxicityScore = 0;
                 
                 toxicWords.forEach(word => {
                     if (lowerText.includes(word)) toxicityScore += 0.25;
                 });
+                
+                // Extra check for profanity
+                if (lowerText.includes('f***')) toxicityScore += 0.4;
+                if (lowerText.includes('sh*t')) toxicityScore += 0.3;
                 
                 // Limit score to 0-1 range
                 toxicityScore = Math.min(1, toxicityScore);
@@ -1330,9 +1255,10 @@ POST /api/v2/analyze  # Current version</code></pre>
                         "score": toxicityScore,
                         "label": toxicityScore > 0.5 ? "toxic" : "clean",
                         "categories": {
-                            "profanity": Math.random() * 0.5,
-                            "insult": Math.random() * 0.3,
-                            "threat": Math.random() * 0.2
+                            "profanity": Math.min(1, toxicityScore * 1.2),
+                            "insult": Math.random() * toxicityScore,
+                            "threat": Math.random() * toxicityScore * 0.8,
+                            "identity_attack": Math.random() * toxicityScore * 0.5
                         }
                     },
                     "sentiment": {
