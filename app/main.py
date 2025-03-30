@@ -116,7 +116,13 @@ async def root():
     """
     Serves the HTML demo interface for testing the API.
     """
-    # Read the simple.html file
+    # Read the modern.html file first (new UI)
+    modern_html_path = Path(__file__).parent / "static" / "modern.html"
+    if modern_html_path.exists():
+        with open(modern_html_path, "r") as file:
+            return file.read()
+            
+    # Fallback to simple.html if modern doesn't exist
     simple_html_path = Path(__file__).parent / "static" / "simple.html"
     if simple_html_path.exists():
         with open(simple_html_path, "r") as file:
