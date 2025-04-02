@@ -12,6 +12,30 @@
     ],
     "routes": [
         {
+            "src": "/",
+            "dest": "app/static/index.html"
+        },
+        {
+            "src": "/analyze",
+            "dest": "app/static/analyze.html"
+        },
+        {
+            "src": "/docs",
+            "dest": "app/static/docs.html"
+        },
+        {
+            "src": "/keys",
+            "dest": "app/static/keys.html"
+        },
+        {
+            "src": "/version",
+            "dest": "app/static/version.html"
+        },
+        {
+            "src": "/limits",
+            "dest": "app/static/limits.html"
+        },
+        {
             "src": "/static/(.*)",
             "dest": "app/static/$1"
         },
@@ -24,7 +48,7 @@
             }
         },
         {
-            "src": "/(.*)",
+            "src": "/api/(.*)",
             "dest": "app/main.py"
         }
     ],

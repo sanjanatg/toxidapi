@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Version - ToxidAPI</title>
+    <style>
+        :root {
+            --background-color: #0f0f13;
+            --card-background: #1a1a1f;
+            --text-color: #ffffff;
+            --secondary-text: #8b8b8b;
+            --accent-color: #dc3545;
+            --accent-hover: #c82333;
+            --border-color: #2a2a2f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--background-color);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0 2rem;
+            display: block;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.75rem 2rem;
+            color: var(--secondary-text);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-color);
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .nav-link.active {
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-background);
+            color: var(--text-color);
+            width: 200px;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline {
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            background: transparent;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .version-section {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 2rem;
+        }
+
+        .version-header {
+            margin-bottom: 1rem;
+        }
+
+        .version-number {
+            font-size: 1.5rem;
+            color: var(--text-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .release-date {
+            color: var(--secondary-text);
+            font-size: 0.9rem;
+        }
+
+        .whats-new {
+            margin-top: 2rem;
+        }
+
+        .whats-new h2 {
+            font-size: 1.2rem;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            color: var(--secondary-text);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .feature-item::before {
+            content: "•";
+            color: var(--accent-color);
+            margin-right: 0.75rem;
+        }
+
+        .deprecation-notice {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 4px;
+            background-color: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--accent-color);
+            color: var(--secondary-text);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <a href="/" class="logo">ToxidAPI</a>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link">Home</a></li>
+            <li><a href="/analyze" class="nav-link">Analyze Text</a></li>
+            <li><a href="/docs" class="nav-link">API Documentation</a></li>
+            <li><a href="/keys" class="nav-link">API Keys</a></li>
+            <li><a href="/version" class="nav-link active">API Version</a></li>
+            <li><a href="/limits" class="nav-link">Rate Limits</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="header">
+            <input type="text" class="search-bar" placeholder="Search...">
+            <a href="/login" class="btn btn-outline">Log in</a>
+        </div>
+
+        <h1>API Version</h1>
+        
+        <div class="version-section">
+            <div class="version-header">
+                <h2 class="version-number">Current Version: v2.0.0</h2>
+                <p class="release-date">Released on March 25, 2024</p>
+            </div>
+
+            <div class="whats-new">
+                <h2>What's New</h2>
+                <ul class="feature-list">
+                    <li class="feature-item">Enhanced toxicity detection accuracy</li>
+                    <li class="feature-item">Improved multi-language support</li>
+                    <li class="feature-item">New sentiment analysis features</li>
+                    <li class="feature-item">Better rate limiting controls</li>
+                </ul>
+            </div>
+
+            <div class="deprecation-notice">
+                Note: v1.0 will be deprecated on June 1, 2024. Please upgrade to v2.0.0.
+            </div>
+        </div>
+    </main>
+</body>
+</html> 

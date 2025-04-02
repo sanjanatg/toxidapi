@@ -117,25 +117,17 @@ async def root():
     Serves the HTML demo interface for testing the API.
     """
     try:
-        # Read the modern.html file first (new UI)
-        modern_html_path = Path(__file__).parent / "static" / "modern.html"
-        if modern_html_path.exists():
+        # Read the index.html file (demo UI)
+        index_html_path = Path(__file__).parent / "static" / "index.html"
+        if index_html_path.exists():
             try:
-                with open(modern_html_path, "r", encoding="utf-8") as file:
+                with open(index_html_path, "r", encoding="utf-8") as file:
                     return file.read()
             except Exception as e:
-                logger.error(f"Error reading modern.html: {str(e)}")
+                logger.error(f"Error reading index.html: {str(e)}")
                 # Continue to fallback
                 
-        # Fallback to simple.html if modern doesn't exist or couldn't be read
-        simple_html_path = Path(__file__).parent / "static" / "simple.html"
-        if simple_html_path.exists():
-            try:
-                with open(simple_html_path, "r", encoding="utf-8") as file:
-                    return file.read()
-            except Exception as e:
-                logger.error(f"Error reading simple.html: {str(e)}")
-                # Continue to fallback
+        # Fallback to embedded HTML if index.html doesn't exist or couldn't be read
     except Exception as e:
         logger.error(f"Error in root endpoint: {str(e)}")
     
@@ -180,6 +172,88 @@ async def root():
     </body>
     </html>
     """
+
+@app.get("/analyze", response_class=HTMLResponse)
+async def analyze_page():
+    """Serves the analyze page"""
+    try:
+        analyze_html_path = Path(__file__).parent / "static" / "analyze.html"
+        if analyze_html_path.exists():
+            with open(analyze_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading analyze.html: {str(e)}")
+        return RedirectResponse(url="/")
+
+@app.get("/docs", response_class=HTMLResponse)
+async def docs_page():
+    """Serves the documentation page"""
+    try:
+        docs_html_path = Path(__file__).parent / "static" / "docs.html"
+        if docs_html_path.exists():
+            with open(docs_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading docs.html: {str(e)}")
+        return RedirectResponse(url="/")
+
+@app.get("/keys", response_class=HTMLResponse)
+async def keys_page():
+    """Serves the API keys page"""
+    try:
+        keys_html_path = Path(__file__).parent / "static" / "keys.html"
+        if keys_html_path.exists():
+            with open(keys_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading keys.html: {str(e)}")
+        return RedirectResponse(url="/")
+
+@app.get("/version", response_class=HTMLResponse)
+async def version_page():
+    """Serves the API version page"""
+    try:
+        version_html_path = Path(__file__).parent / "static" / "version.html"
+        if version_html_path.exists():
+            with open(version_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading version.html: {str(e)}")
+        return RedirectResponse(url="/")
+
+@app.get("/limits", response_class=HTMLResponse)
+async def limits_page():
+    """Serves the rate limits page"""
+    try:
+        limits_html_path = Path(__file__).parent / "static" / "limits.html"
+        if limits_html_path.exists():
+            with open(limits_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading limits.html: {str(e)}")
+        return RedirectResponse(url="/")
+
+@app.get("/signin", response_class=HTMLResponse)
+async def signin_redirect():
+    """Redirects to login page"""
+    return RedirectResponse(url="/login")
+
+@app.get("/signup", response_class=HTMLResponse)
+async def signup_page():
+    """Redirects to registration page"""
+    return RedirectResponse(url="/register")
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serves the login page"""
+    # For now, redirect to home since we haven't created the login page yet
+    return RedirectResponse(url="/")
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page():
+    """Serves the registration page"""
+    # For now, redirect to home since we haven't created the registration page yet
+    return RedirectResponse(url="/")
 
 # Health check endpoint
 @app.get("/health", include_in_schema=False)
