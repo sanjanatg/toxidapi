@@ -255,11 +255,29 @@
                 
                 console.log('Registration response status:', response.status);
                 
-                const data = await response.json();
-                console.log('Registration response data:', data);
+                // Check response type before trying to parse as JSON
+                const contentType = response.headers.get('content-type');
+                let data;
+                let errorMessage;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    // It's a JSON response, safe to parse
+                    try {
+                        data = await response.json();
+                        console.log('Registration response data:', data);
+                        errorMessage = data.detail || 'Registration failed';
+                    } catch (jsonError) {
+                        console.error('Error parsing JSON:', jsonError);
+                        errorMessage = 'Invalid server response';
+                    }
+                } else {
+                    // Not JSON, get text instead
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    errorMessage = 'Server error: ' + (text.substring(0, 100) || response.statusText || 'Registration failed');
+                }
                 
                 if (!response.ok) {
-                    const errorMessage = data.detail || 'Registration failed';
                     console.error('Registration error:', errorMessage);
                     throw new Error(errorMessage);
                 }
@@ -277,7 +295,7 @@
             } catch (error) {
                 console.error('Registration error:', error);
                 // Show error message
-                alertElement.textContent = error.message;
+                alertElement.textContent = error.message || 'Unknown error occurred';
                 alertElement.className = 'alert alert-error';
                 alertElement.style.display = 'block';
             }
