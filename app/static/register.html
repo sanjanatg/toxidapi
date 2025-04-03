@@ -239,6 +239,12 @@
                 .catch(error => {
                     console.error('API connection test failed:', error);
                 });
+            
+            // Add favicon to prevent 404 errors
+            const favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            favicon.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔍</text></svg>';
+            document.head.appendChild(favicon);
         });
 
         document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -277,25 +283,41 @@
             let attemptCount = 0;
             const maxAttempts = 3;
             let success = false;
+            let useSimpleEndpoint = false;
             
             while (!success && attemptCount < maxAttempts) {
                 attemptCount++;
                 
                 if (attemptCount > 1) {
-                    showAlert(`Retrying registration (attempt ${attemptCount}/${maxAttempts})...`, 'error');
+                    if (attemptCount === maxAttempts - 1) {
+                        useSimpleEndpoint = true;
+                        showAlert(`Trying simplified registration...`, 'error');
+                    } else {
+                        showAlert(`Retrying registration (attempt ${attemptCount}/${maxAttempts})...`, 'error');
+                    }
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between attempts
                 }
                 
                 try {
-                    console.log(`Registration attempt ${attemptCount} with email: ${email}`);
+                    console.log(`Registration attempt ${attemptCount} with email: ${email}, using ${useSimpleEndpoint ? 'simple' : 'standard'} endpoint`);
                     
-                    const response = await fetch('/auth/register', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
+                    let response;
+                    
+                    if (useSimpleEndpoint) {
+                        // Use the simplified endpoint as a fallback
+                        response = await fetch(`/auth/register-simple?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+                            method: 'POST'
+                        });
+                    } else {
+                        // Use the standard endpoint
+                        response = await fetch('/auth/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                    }
                     
                     console.log('Registration response status:', response.status);
                     
@@ -333,6 +355,11 @@
                                 errorMessage.includes('setup error') ||
                                 response.status === 500) {
                                 shouldRetry = attemptCount < maxAttempts;
+                                
+                                // Try the simple endpoint on the next attempt
+                                if (attemptCount === maxAttempts - 1) {
+                                    useSimpleEndpoint = true;
+                                }
                             }
                         } catch (jsonError) {
                             // If we can't parse JSON (e.g., HTML error page returned)
@@ -340,6 +367,11 @@
                             if (response.status === 500) {
                                 errorMessage = 'Server error. The database might be initializing.';
                                 shouldRetry = attemptCount < maxAttempts;
+                                
+                                // Try the simple endpoint on the next attempt
+                                if (attemptCount === maxAttempts - 1) {
+                                    useSimpleEndpoint = true;
+                                }
                             } else if (response.status === 400) {
                                 errorMessage = 'Invalid registration data. Please check your input.';
                             } else if (response.status === 409) {
@@ -401,4 +433,4 @@
         }
     </script>
 </body>
-</html> 
+</html>
