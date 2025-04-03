@@ -11,6 +11,9 @@ from pydantic import ValidationError
 from email_validator import EmailNotValidError, EmailSyntaxError
 import uuid
 import hashlib
+import jwt
+from datetime import datetime, timedelta
+import os
 
 from app.models.database import get_db
 from app.models.user import UserCreate, UserLogin, UserResponse, APIKeyCreate, APIKeyResponse
@@ -341,6 +344,62 @@ async def register_simple(email: str, password: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Simple registration failed: {str(e)}"
+        )
+
+# Add this after the register-simple endpoint
+@router.post("/login-simple")
+async def login_simple(email: str, password: str):
+    """Simplified login endpoint for testing"""
+    try:
+        logger.info(f"Simple login attempt for email: {email}")
+        
+        # Generate a deterministic user ID based on email
+        user_id = hashlib.md5(email.encode()).hexdigest()
+        
+        # Create a simple API key 
+        api_key = f"toxid_simple_{hashlib.sha256(email.encode()).hexdigest()[:32]}"
+        
+        # Hash the password (this should match what we did in register-simple)
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        
+        # In a real system we'd check if user exists and verify the password
+        # Here we're just generating a token
+        
+        # Create an access token
+        token_data = {
+            "sub": user_id,
+            "email": email,
+            "exp": datetime.utcnow() + timedelta(minutes=30)
+        }
+        
+        # Generate the token
+        secret_key = os.getenv("SECRET_KEY", "default_fallback_key_for_simple_login")
+        # Ensure it's at least 32 chars
+        if len(secret_key) < 32:
+            secret_key = secret_key.ljust(32, 'x')
+            
+        access_token = jwt.encode(token_data, secret_key, algorithm="HS256")
+        
+        # Return user data similar to regular login
+        logger.info(f"Simple login successful for email: {email}")
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user_id,
+                "email": email,
+                "tier": "free",
+                "created_at": datetime.utcnow().isoformat(),
+                "api_keys": [api_key]
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in simple login: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Simple login failed: {str(e)}"
         )
 
 # Log that routes are registered

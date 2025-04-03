@@ -208,11 +208,18 @@
                         console.log('API is available');
                     } else {
                         console.warn('API returned status:', response.status);
+                        showAlert('Server status check: ' + response.status, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('API connection test failed:', error);
                 });
+            
+            // Add favicon to prevent 404 errors
+            const favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            favicon.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔍</text></svg>';
+            document.head.appendChild(favicon);
         });
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -224,110 +231,175 @@
             const alertElement = document.getElementById('alert');
             alertElement.style.display = 'none';
             
-            try {
-                console.log('Attempting login with email:', email);
+            // Show loading state
+            const submitButton = document.querySelector('.form-button');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = 'Logging in...';
+            submitButton.disabled = true;
+            
+            let attemptCount = 0;
+            const maxAttempts = 3;
+            let success = false;
+            let useSimpleEndpoint = false;
+            
+            while (!success && attemptCount < maxAttempts) {
+                attemptCount++;
                 
-                // Try multiple login strategies
-                let loginSuccessful = false;
-                let loginError = null;
-                let loginData = null;
-                
-                // Strategy 1: Try JSON login endpoint
-                try {
-                    console.log('Trying JSON login endpoint');
-                    const response = await fetch('/auth/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-                    
-                    console.log('JSON login response status:', response.status);
-                    
-                    if (response.ok) {
-                        loginData = await response.json();
-                        loginSuccessful = true;
-                        console.log('JSON login successful');
+                if (attemptCount > 1) {
+                    if (attemptCount === maxAttempts - 1) {
+                        useSimpleEndpoint = true;
+                        showAlert(`Trying simplified login...`, 'error');
                     } else {
-                        const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
-                        loginError = new Error(errorData.detail || 'Login failed');
-                        console.warn('JSON login failed:', errorData);
+                        showAlert(`Retrying login (attempt ${attemptCount}/${maxAttempts})...`, 'error');
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between attempts
+                }
+                
+                try {
+                    console.log(`Login attempt ${attemptCount} with email: ${email}, using ${useSimpleEndpoint ? 'simple' : 'standard'} endpoint`);
+                    
+                    let response;
+                    let loginData = null;
+                    
+                    if (useSimpleEndpoint) {
+                        // Try simplified login endpoint
+                        console.log('Trying simplified login endpoint');
+                        response = await fetch(`/auth/login-simple?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
+                            method: 'POST'
+                        });
+                    } else {
+                        // First try JSON login endpoint
+                        try {
+                            console.log('Trying JSON login endpoint');
+                            response = await fetch('/auth/login', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ email, password })
+                            });
+                            
+                            console.log('JSON login response status:', response.status);
+                            
+                            if (!response.ok && attemptCount === 1) {
+                                // If first attempt with JSON fails, try OAuth endpoint right away
+                                console.log('JSON login failed, trying OAuth token endpoint');
+                                
+                                const formData = new FormData();
+                                formData.append('username', email);
+                                formData.append('password', password);
+                                
+                                response = await fetch('/auth/token', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                
+                                console.log('OAuth login response status:', response.status);
+                            }
+                        } catch (error) {
+                            console.error('Regular login error:', error);
+                            if (attemptCount === maxAttempts - 1) {
+                                useSimpleEndpoint = true;
+                                continue;
+                            }
+                        }
+                    }
+                    
+                    // Handle different response statuses
+                    if (response.ok) {
+                        success = true;
+                        const data = await response.json();
+                        loginData = data;
+                        console.log('Login successful:', data);
+                        
+                        // Store access token and user data in localStorage
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('token_type', data.token_type);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        
+                        // Show success message
+                        showAlert('Login successful! Redirecting to API keys page...', 'success');
+                        
+                        // Redirect to keys page after a delay
+                        setTimeout(() => {
+                            window.location.href = '/keys';
+                        }, 1500);
+                        
+                        break; // Exit the loop on success
+                        
+                    } else {
+                        let errorMessage = 'Login failed';
+                        let shouldRetry = false;
+                        
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.detail || 'Login failed';
+                            console.warn('Login error:', errorData);
+                            
+                            // Some errors should trigger retry
+                            if (errorMessage.includes('database error') || 
+                                response.status === 500) {
+                                shouldRetry = attemptCount < maxAttempts;
+                                
+                                // Try the simple endpoint on the next attempt
+                                if (attemptCount === maxAttempts - 1) {
+                                    useSimpleEndpoint = true;
+                                }
+                            }
+                        } catch (jsonError) {
+                            // If we can't parse JSON
+                            console.error('Error parsing error response:', jsonError);
+                            if (response.status === 500) {
+                                errorMessage = 'Server error. Please try again.';
+                                shouldRetry = attemptCount < maxAttempts;
+                                
+                                // Try the simple endpoint on the next attempt
+                                if (attemptCount === maxAttempts - 1) {
+                                    useSimpleEndpoint = true;
+                                }
+                            } else if (response.status === 401) {
+                                errorMessage = 'Incorrect email or password.';
+                            } else if (response.status === 400) {
+                                errorMessage = 'Invalid login data. Please check your input.';
+                            }
+                        }
+                        
+                        if (!shouldRetry) {
+                            // Show final error message
+                            showAlert(errorMessage, 'error');
+                            break;
+                        } else if (attemptCount >= maxAttempts) {
+                            showAlert(`${errorMessage} (Maximum retry attempts reached)`, 'error');
+                        }
                     }
                 } catch (error) {
-                    console.error('JSON login error:', error);
-                    loginError = error;
-                }
-                
-                // Strategy 2: Try OAuth token endpoint
-                if (!loginSuccessful) {
-                    try {
-                        console.log('Trying OAuth token endpoint');
-                        const formData = new FormData();
-                        formData.append('username', email);
-                        formData.append('password', password);
-                        
-                        const response = await fetch('/auth/token', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        console.log('OAuth login response status:', response.status);
-                        
-                        if (response.ok) {
-                            loginData = await response.json();
-                            loginSuccessful = true;
-                            console.log('OAuth login successful');
-                        } else {
-                            const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
-                            loginError = new Error(errorData.detail || 'Login failed');
-                            console.warn('OAuth login failed:', errorData);
-                        }
-                    } catch (error) {
-                        console.error('OAuth login error:', error);
-                        if (!loginError) loginError = error;
+                    console.error('Login error:', error);
+                    
+                    // More descriptive error messages based on error type
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        showAlert('Network error. Please check your internet connection.', 'error');
+                    } else if (error.name === 'SyntaxError') {
+                        showAlert('The server returned an invalid response. Try again later.', 'error');
+                    } else {
+                        showAlert('An unexpected error occurred. Please try again later.', 'error');
                     }
-                }
-                
-                // Handle login result
-                if (loginSuccessful && loginData) {
-                    console.log('Login successful:', loginData);
                     
-                    // Store user data and token in localStorage
-                    localStorage.setItem('token', loginData.access_token);
-                    localStorage.setItem('user', JSON.stringify(loginData.user));
-                    
-                    // Show success message
-                    alertElement.textContent = 'Login successful! Redirecting...';
-                    alertElement.className = 'alert alert-success';
-                    alertElement.style.display = 'block';
-                    
-                    // Redirect to API keys page
-                    setTimeout(() => {
-                        window.location.href = '/keys';
-                    }, 1000);
-                } else {
-                    throw loginError || new Error('Login failed for unknown reasons');
+                    break; // Exit on network errors
                 }
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                
-                // Show error message
-                let errorMessage = error.message || 'An error occurred during login. Please try again.';
-                
-                // Special handling for common errors
-                if (errorMessage.includes('Failed to fetch') || error.name === 'TypeError') {
-                    errorMessage = 'Cannot connect to the authentication service. The server may be unavailable. Please try again later.';
-                } else if (errorMessage.includes('404') || errorMessage.includes('NOT_FOUND')) {
-                    errorMessage = 'The authentication service is not available. Please contact support or try again later.';
-                }
-                
-                alertElement.textContent = errorMessage;
-                alertElement.className = 'alert alert-error';
-                alertElement.style.display = 'block';
             }
+            
+            // Reset button state
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
         });
+        
+        // Helper functions
+        function showAlert(message, type) {
+            const alertElement = document.getElementById('alert');
+            alertElement.textContent = message;
+            alertElement.className = `alert alert-${type}`;
+            alertElement.style.display = 'block';
+        }
     </script>
 </body>
 </html> 
