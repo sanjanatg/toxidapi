@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Guide - ToxidAPI</title>
+    <style>
+        :root {
+            --background-color: #0f0f13;
+            --card-background: #1a1a1f;
+            --text-color: #ffffff;
+            --secondary-text: #8b8b8b;
+            --accent-color: #dc3545;
+            --accent-hover: #c82333;
+            --border-color: #2a2a2f;
+            --code-background: #141419;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--background-color);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0 2rem;
+            display: block;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 0.75rem 2rem;
+            color: var(--secondary-text);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--text-color);
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .nav-link.active {
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-outline {
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            background: transparent;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.5rem;
+            color: var(--accent-color);
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        code {
+            font-family: monospace;
+            background-color: var(--code-background);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #f8f8f2;
+        }
+
+        pre {
+            background-color: var(--code-background);
+            border-radius: 4px;
+            padding: 1rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        pre code {
+            padding: 0;
+            background-color: transparent;
+        }
+
+        .language-tab {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 4px 4px 0 0;
+            background-color: rgba(0,0,0,0.2);
+            cursor: pointer;
+            margin-right: 0.25rem;
+        }
+
+        .language-tab.active {
+            background-color: var(--code-background);
+        }
+
+        .code-block {
+            display: none;
+        }
+
+        .code-block.active {
+            display: block;
+        }
+
+        .note {
+            background-color: rgba(66, 133, 244, 0.1);
+            border-left: 4px solid #4285f4;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <a href="/" class="logo">ToxidAPI</a>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link">Home</a></li>
+            <li><a href="/analyze" class="nav-link">Analyze Text</a></li>
+            <li><a href="/docs" class="nav-link">API Documentation</a></li>
+            <li><a href="/keys" class="nav-link">API Keys</a></li>
+            <li><a href="/integration" class="nav-link active">Integration Guide</a></li>
+            <li><a href="/version" class="nav-link">API Version</a></li>
+            <li><a href="/limits" class="nav-link">Rate Limits</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="header">
+            <h1>ToxidAPI Integration Guide</h1>
+            <a href="/login" class="btn btn-outline" id="login-btn">Log in</a>
+        </div>
+
+        <div class="card">
+            <h2>Quick Start Guide</h2>
+            <p>ToxidAPI offers powerful text analysis capabilities through a simple API. This guide will help you integrate our services into your application.</p>
+            
+            <ol>
+                <li>Register for an account</li>
+                <li>Generate an API key</li>
+                <li>Make API requests using your key</li>
+                <li>Process the responses in your application</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2>Getting Your API Key</h2>
+            
+            <p>API keys are essential for accessing ToxidAPI. Here's how to get yours:</p>
+            
+            <ol>
+                <li><strong>Create an account</strong> - <a href="/register">Register here</a> if you don't have an account</li>
+                <li><strong>Log in</strong> to your account</li>
+                <li>Navigate to the <strong><a href="/keys">API Keys</a></strong> page</li>
+                <li>Click <strong>"Create New Key"</strong> and give it a name</li>
+                <li><strong>Copy and save your API key</strong> in a secure location</li>
+            </ol>
+            
+            <div class="warning">
+                <p><strong>Important:</strong> Store your API key securely. Never expose it in client-side JavaScript or public repositories.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Using Your API Key</h2>
+            
+            <p>For all API requests, include your API key in the <code>X-API-Key</code> header:</p>
+            
+            <h3>Python Example</h3>
+            <pre><code>import requests
+
+# Your API key from the ToxidAPI dashboard
+API_KEY = "your_api_key_here"
+
+# Function to analyze text
+def analyze_text(text):
+    response = requests.post(
+        "https://toxidapi.vercel.app/api/v2/analyze",
+        headers={
+            "Content-Type": "application/json",
+            "X-API-Key": API_KEY
+        },
+        json={"text": text}
+    )
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+# Example usage
+result = analyze_text("This is a sample text to analyze")
+if result:
+    print(f"Toxicity: {result['toxicity']['score']}")
+    print(f"Sentiment: {result['sentiment']['label']}")</code></pre>
+            
+            <h3>JavaScript/Node.js Example</h3>
+            <pre><code>// Your API key from the ToxidAPI dashboard
+const API_KEY = "your_api_key_here";
+
+// Function to analyze text
+async function analyzeText(text) {
+    try {
+        const response = await fetch("https://toxidapi.vercel.app/api/v2/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-API-Key": API_KEY
+            },
+            body: JSON.stringify({ text })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error("Error analyzing text:", error);
+        return null;
+    }
+}
+
+// Example usage
+analyzeText("This is a sample text to analyze")
+    .then(result => {
+        if (result) {
+            console.log(`Toxicity: ${result.toxicity.score}`);
+            console.log(`Sentiment: ${result.sentiment.label}`);
+        }
+    });</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>API Response Format</h2>
+            
+            <p>ToxidAPI returns responses in JSON format with the following structure:</p>
+            
+            <pre><code>{
+  "toxicity": {
+    "score": 0.03,          // 0-1 scale
+    "is_toxic": false       // boolean
+  },
+  "sentiment": {
+    "score": 0.72,          // -1 to 1 scale
+    "label": "POSITIVE"     // POSITIVE, NEGATIVE, or NEUTRAL
+  },
+  "flagged_words": {
+    "count": 0,             // number of flagged words found
+    "words": [],            // array of flagged words
+    "categories": {}        // categorization of flagged words
+  },
+  "processing_time": 0.25,  // seconds
+  "text": "This is a sample text to analyze"
+}</code></pre>
+            
+            <h3>Key Fields</h3>
+            <ul>
+                <li><code>toxicity.score</code>: Number between 0-1 indicating toxicity level</li>
+                <li><code>toxicity.is_toxic</code>: Boolean showing if text is considered toxic</li>
+                <li><code>sentiment.score</code>: Number between -1 and 1 (-1 = negative, 1 = positive)</li>
+                <li><code>sentiment.label</code>: POSITIVE, NEGATIVE, or NEUTRAL</li>
+                <li><code>flagged_words</code>: Details about potentially problematic content</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>Error Handling</h2>
+            
+            <p>Here are common errors you might encounter:</p>
+            
+            <table>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Error</th>
+                    <th>Solution</th>
+                </tr>
+                <tr>
+                    <td>400</td>
+                    <td>Bad Request</td>
+                    <td>Check your input parameters</td>
+                </tr>
+                <tr>
+                    <td>401</td>
+                    <td>Unauthorized</td>
+                    <td>API key is missing</td>
+                </tr>
+                <tr>
+                    <td>403</td>
+                    <td>Forbidden</td>
+                    <td>Invalid API key</td>
+                </tr>
+                <tr>
+                    <td>429</td>
+                    <td>Too Many Requests</td>
+                    <td>You've exceeded rate limits</td>
+                </tr>
+            </table>
+            
+            <h3>Handling Errors in Your Code</h3>
+            <pre><code>try {
+    const result = await analyzeText("Text to analyze");
+    // Process successful result
+} catch (error) {
+    if (error.status === 401 || error.status === 403) {
+        console.error("Authentication failed. Check your API key.");
+    } else if (error.status === 429) {
+        console.error("Rate limit exceeded. Please retry later.");
+    } else {
+        console.error("An error occurred:", error.message);
+    }
+}</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>API Security Best Practices</h2>
+            
+            <h3>Protecting Your API Key</h3>
+            <ul>
+                <li><strong>Never expose your API key</strong> in client-side code or public repositories</li>
+                <li>Use <strong>environment variables</strong> to store your API key</li>
+                <li>For web applications, make API calls from your <strong>backend server</strong>, not directly from the browser</li>
+                <li>Implement proper <strong>error handling</strong> to avoid leaking sensitive information</li>
+                <li>Consider using a <strong>proxy service</strong> when calling from frontend applications</li>
+            </ul>
+            
+            <h3>Sample Server-Side Implementation (Node.js)</h3>
+            <pre><code>// server.js - Keep your API key secure on the server
+require('dotenv').config(); // Load API_KEY from .env file
+const express = require('express');
+const axios = require('axios');
+const app = express();
+
+app.use(express.json());
+
+// Endpoint that clients can call without exposing API key
+app.post('/analyze', async (req, res) => {
+    try {
+        const { text } = req.body;
+        
+        // Make request to ToxidAPI with your secret API key
+        const response = await axios.post(
+            'https://toxidapi.vercel.app/api/v2/analyze',
+            { text },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': process.env.TOXIDAPI_KEY // Secured in environment variables
+                }
+            }
+        );
+        
+        // Return analysis to client (without exposing your API key)
+        res.json(response.data);
+    } catch (error) {
+        res.status(error.response?.status || 500).json({
+            error: error.response?.data?.detail || 'An error occurred'
+        });
+    }
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));</code></pre>
+        </div>
+
+        <div class="card">
+            <h2>Sample Applications</h2>
+            
+            <h3>Content Moderation System</h3>
+            <p>Use ToxidAPI to automatically flag potentially harmful content in your application:</p>
+            
+            <pre><code>async function moderateComment(comment) {
+    const analysis = await analyzeText(comment);
+    
+    if (analysis.toxicity.is_toxic || analysis.flagged_words.count > 0) {
+        // Flag for review or reject automatically
+        return {
+            approved: false,
+            reason: analysis.toxicity.is_toxic ? 'Toxic content detected' : 'Flagged words detected',
+            details: analysis
+        };
+    }
+    
+    return {
+        approved: true,
+        details: analysis
+    };
+}</code></pre>
+            
+            <h3>Sentiment Analysis Dashboard</h3>
+            <p>Track sentiment across customer feedback:</p>
+            
+            <pre><code>// Process a batch of customer feedback items
+async function analyzeFeedbackBatch(feedbackItems) {
+    const results = [];
+    
+    for (const item of feedbackItems) {
+        try {
+            const analysis = await analyzeText(item.text);
+            results.push({
+                id: item.id,
+                text: item.text,
+                sentiment: analysis.sentiment.label,
+                score: analysis.sentiment.score,
+                toxic: analysis.toxicity.is_toxic
+            });
+        } catch (error) {
+            console.error(`Error analyzing feedback #${item.id}:`, error);
+            results.push({
+                id: item.id,
+                error: 'Analysis failed'
+            });
+        }
+    }
+    
+    return results;
+}</code></pre>
+        </div>
+    </main>
+    
+    <script>
+        // Add favicon to prevent 404 errors
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.href = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔍</text></svg>';
+        document.head.appendChild(favicon);
+        
+        // Update login button if user is logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.getElementById('login-btn');
+            
+            // Check if user is logged in
+            const accessToken = localStorage.getItem('access_token');
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            
+            if ((accessToken || token) && user) {
+                loginBtn.textContent = 'My Account';
+                loginBtn.href = '/keys';
+            }
+        });
+    </script>
+</body>
+</html> 

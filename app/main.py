@@ -254,6 +254,18 @@ async def analyze_page():
         logger.error(f"Error reading analyze.html: {str(e)}")
         return RedirectResponse(url="/")
 
+@app.get("/integration", response_class=HTMLResponse)
+async def integration_page():
+    """Serves the integration guide page"""
+    try:
+        integration_html_path = Path(__file__).parent / "static" / "integration_guide.html"
+        if integration_html_path.exists():
+            with open(integration_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading integration_guide.html: {str(e)}")
+        return RedirectResponse(url="/")
+
 @app.get("/docs", response_class=HTMLResponse)
 async def docs_page():
     """Serves the documentation page"""
