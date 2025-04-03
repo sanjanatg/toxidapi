@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import os
@@ -121,11 +121,45 @@ def get_db():
 def create_tables():
     """Create database tables with error handling"""
     try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
+        logger.info("Attempting to create database tables")
+        # Check if tables already exist
+        inspector = inspect(engine)
+        existing_tables = inspector.get_table_names()
+        logger.info(f"Existing tables: {existing_tables}")
+        
+        if "users" in existing_tables and "api_keys" in existing_tables:
+            logger.info("Database tables already exist")
+        else:
+            # Create the tables
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+        
+        # Verify tables were created
+        verify_tables = inspector.get_table_names()
+        if "users" not in verify_tables or "api_keys" not in verify_tables:
+            logger.error(f"Tables were not created properly. Current tables: {verify_tables}")
+            raise Exception("Database tables were not created properly")
+        
+        logger.info("Database initialization complete")
     except Exception as e:
         logger.error(f"Error creating database tables: {str(e)}")
         logger.error("Application may not function correctly")
+        
+        # Try to diagnose the issue
+        try:
+            if isinstance(e, OperationalError):
+                logger.error("This appears to be a database connection or operational error")
+                logger.error(f"DATABASE_URL type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'unknown'}")
+                
+                # Check if we can connect at all
+                logger.info("Attempting basic connection test...")
+                conn = engine.connect()
+                conn.close()
+                logger.info("Basic connection successful, but schema creation failed")
+            else:
+                logger.error(f"Error type: {type(e).__name__}")
+        except Exception as diagnostic_error:
+            logger.error(f"Diagnostic error: {str(diagnostic_error)}")
 
 # Initialize database on import
 create_tables() 

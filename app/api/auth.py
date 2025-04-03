@@ -54,6 +54,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
         # Check if user already exists
         db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
         if db_user:
+            logger.warning(f"Registration attempt with existing email: {user.email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
@@ -61,33 +62,50 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
         
         # Create new user
         user_id = str(uuid.uuid4())
-        db_user = DBUser(
-            id=user_id,
-            email=user.email,
-            hashed_password=get_password_hash(user.password),
-            created_at=datetime.utcnow(),
-            tier="free",
-            is_active=True
-        )
+        logger.debug(f"Creating new user with ID: {user_id} and email: {user.email}")
         
-        # Add user to database
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        
-        # Create default API key
-        api_key = create_api_key(db_user.id, "Default", db)
-        
-        # Return user data
-        return UserResponse(
-            id=db_user.id,
-            email=db_user.email,
-            tier=db_user.tier,
-            created_at=db_user.created_at,
-            api_keys=[api_key.key]
-        )
+        try:
+            db_user = DBUser(
+                id=user_id,
+                email=user.email,
+                hashed_password=get_password_hash(user.password),
+                created_at=datetime.utcnow(),
+                tier="free",
+                is_active=True
+            )
+            
+            # Add user to database
+            logger.debug("Adding user to database")
+            db.add(db_user)
+            db.commit()
+            logger.debug("User committed to database")
+            db.refresh(db_user)
+            
+            # Create default API key
+            logger.debug(f"Creating default API key for user: {user_id}")
+            api_key = create_api_key(db_user.id, "Default", db)
+            
+            # Return user data
+            logger.info(f"User registered successfully: {user.email}")
+            return UserResponse(
+                id=db_user.id,
+                email=db_user.email,
+                tier=db_user.tier,
+                created_at=db_user.created_at,
+                api_keys=[api_key.key]
+            )
+        except Exception as db_error:
+            logger.error(f"Database error during registration: {str(db_error)}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error during registration: {str(db_error)}"
+            )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        logger.error(f"Error in register_user: {str(e)}")
+        logger.error(f"Unexpected error in register_user: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
