@@ -238,9 +238,10 @@ async def limits_page():
         logger.error(f"Error reading limits.html: {str(e)}")
         return RedirectResponse(url="/")
 
+@app.get("/login", response_class=HTMLResponse)
 @app.get("/signin", response_class=HTMLResponse)
-async def signin_redirect():
-    """Redirects to login page"""
+async def login_page():
+    """Serves the login page"""
     try:
         login_html_path = Path(__file__).parent / "static" / "login.html"
         if login_html_path.exists():
@@ -250,9 +251,10 @@ async def signin_redirect():
         logger.error(f"Error reading login.html: {str(e)}")
     return RedirectResponse(url="/")
 
+@app.get("/register", response_class=HTMLResponse)
 @app.get("/signup", response_class=HTMLResponse)
-async def signup_page():
-    """Redirects to registration page"""
+async def register_page():
+    """Serves the registration page"""
     try:
         register_html_path = Path(__file__).parent / "static" / "register.html"
         if register_html_path.exists():
@@ -261,16 +263,6 @@ async def signup_page():
     except Exception as e:
         logger.error(f"Error reading register.html: {str(e)}")
     return RedirectResponse(url="/")
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page():
-    """Serves the login page"""
-    return await signin_redirect()
-
-@app.get("/register", response_class=HTMLResponse)
-async def register_page():
-    """Serves the registration page"""
-    return await signup_page()
 
 # Health check endpoint
 @app.get("/health", include_in_schema=False)
