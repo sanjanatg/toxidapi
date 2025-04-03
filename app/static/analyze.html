@@ -311,25 +311,51 @@
             resultsContainer.classList.add('active');
 
             try {
+                // Check for API key in localStorage
+                const accessToken = localStorage.getItem('access_token');
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const apiKey = user.api_keys && user.api_keys.length > 0 ? 
+                    (typeof user.api_keys[0] === 'string' ? user.api_keys[0] : user.api_keys[0].key) : null;
+                
+                // Set headers based on authentication
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (apiKey) {
+                    console.log("Using API key for analysis");
+                    headers['X-API-Key'] = apiKey;
+                } else if (accessToken) {
+                    console.log("Using access token for analysis");
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+                
                 const response = await fetch('/api/v2/analyze', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: headers,
                     body: JSON.stringify({ text })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    // Handle different error cases
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Authentication failed. Please generate an API key on the API Keys page.');
+                    } else {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
                 }
 
                 const data = await response.json();
                 displayResults(data);
             } catch (error) {
+                console.error('Analysis error:', error);
                 resultsContainer.innerHTML = `
-                    <div class="result-card">
+                    <div class="result-card error">
                         <h3>Error</h3>
                         <p>${error.message}</p>
+                        ${!localStorage.getItem('access_token') ? 
+                          '<p><a href="/login" class="btn">Login to continue</a></p>' : 
+                          '<p><a href="/keys" class="btn">Generate API Key</a></p>'}
                     </div>
                 `;
             } finally {
