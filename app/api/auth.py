@@ -57,17 +57,34 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
     """Register a new user"""
     try:
         # Check if user already exists
-        db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
-        if db_user:
-            logger.warning(f"Registration attempt with existing email: {user.email}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
-            )
+        try:
+            db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
+            if db_user:
+                logger.warning(f"Registration attempt with existing email: {user.email}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
+        except Exception as query_error:
+            # This could happen if the users table doesn't exist yet
+            logger.error(f"Error querying users table: {str(query_error)}")
+            if "no such table: users" in str(query_error):
+                logger.info("Creating tables for SQLite database")
+                try:
+                    # Try to create tables if they don't exist
+                    from app.models.database import Base
+                    Base.metadata.create_all(bind=db.get_bind())
+                    logger.info("Tables created successfully")
+                except Exception as create_error:
+                    logger.error(f"Error creating tables: {str(create_error)}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Database setup error. Please try again later."
+                    )
         
         # Create new user
         user_id = str(uuid.uuid4())
-        logger.debug(f"Creating new user with ID: {user_id} and email: {user.email}")
+        logger.info(f"Creating new user with ID: {user_id} and email: {user.email}")
         
         try:
             db_user = DBUser(
@@ -80,14 +97,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
             )
             
             # Add user to database
-            logger.debug("Adding user to database")
+            logger.info("Adding user to database")
             db.add(db_user)
             db.commit()
-            logger.debug("User committed to database")
+            logger.info("User committed to database")
             db.refresh(db_user)
             
             # Create default API key
-            logger.debug(f"Creating default API key for user: {user_id}")
+            logger.info(f"Creating default API key for user: {user_id}")
             api_key = create_api_key(db_user.id, "Default", db)
             
             # Return user data
@@ -111,6 +128,10 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
         raise
     except Exception as e:
         logger.error(f"Unexpected error in register_user: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

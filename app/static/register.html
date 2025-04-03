@@ -224,6 +224,23 @@
     </div>
     
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we can connect to the API
+            fetch('/api/v2/stats')
+                .then(response => {
+                    console.log('API connection test:', response.status);
+                    if (response.status >= 200 && response.status < 300) {
+                        console.log('API is available');
+                    } else {
+                        console.warn('API returned status:', response.status);
+                        showAlert('Server status check: ' + response.status, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('API connection test failed:', error);
+                });
+        });
+
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -234,13 +251,28 @@
             const alertElement = document.getElementById('alert');
             alertElement.style.display = 'none';
             
+            // Clear any previous errors
+            resetFormErrors();
+            
             // Validate password match
             if (password !== confirmPassword) {
-                alertElement.textContent = 'Passwords do not match';
-                alertElement.className = 'alert alert-error';
-                alertElement.style.display = 'block';
+                showAlert('Passwords do not match', 'error');
+                highlightField('confirm-password');
                 return;
             }
+            
+            // Validate password length
+            if (password.length < 8) {
+                showAlert('Password must be at least 8 characters long', 'error');
+                highlightField('password');
+                return;
+            }
+            
+            // Show loading state
+            const submitButton = document.querySelector('.form-button');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = 'Creating Account...';
+            submitButton.disabled = true;
             
             try {
                 console.log('Attempting registration with email:', email);
@@ -255,51 +287,85 @@
                 
                 console.log('Registration response status:', response.status);
                 
-                // Check response type before trying to parse as JSON
-                const contentType = response.headers.get('content-type');
-                let data;
-                let errorMessage;
-                
-                if (contentType && contentType.includes('application/json')) {
-                    // It's a JSON response, safe to parse
-                    try {
-                        data = await response.json();
-                        console.log('Registration response data:', data);
-                        errorMessage = data.detail || 'Registration failed';
-                    } catch (jsonError) {
-                        console.error('Error parsing JSON:', jsonError);
-                        errorMessage = 'Invalid server response';
-                    }
+                // Handle different response statuses
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Registration successful:', data);
+                    
+                    // Store user data in localStorage
+                    localStorage.setItem('user', JSON.stringify(data));
+                    
+                    // Show success message
+                    showAlert('Account created successfully! Redirecting to login...', 'success');
+                    
+                    // Redirect to login page after a delay
+                    setTimeout(() => {
+                        window.location.href = '/keys';
+                    }, 1500);
+                    
                 } else {
-                    // Not JSON, get text instead
-                    const text = await response.text();
-                    console.error('Non-JSON response:', text);
-                    errorMessage = 'Server error: ' + (text.substring(0, 100) || response.statusText || 'Registration failed');
+                    let errorMessage = 'Registration failed';
+                    
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.detail || 'Registration failed';
+                        console.warn('Registration error:', errorData);
+                    } catch (jsonError) {
+                        // If we can't parse JSON (e.g., HTML error page returned)
+                        console.error('Error parsing error response:', jsonError);
+                        if (response.status === 500) {
+                            errorMessage = 'Server error. Our team has been notified.';
+                        } else if (response.status === 400) {
+                            errorMessage = 'Invalid registration data. Please check your input.';
+                        } else if (response.status === 409) {
+                            errorMessage = 'Email already registered. Please use a different email.';
+                        }
+                    }
+                    
+                    // Show error message
+                    showAlert(errorMessage, 'error');
                 }
-                
-                if (!response.ok) {
-                    console.error('Registration error:', errorMessage);
-                    throw new Error(errorMessage);
-                }
-                
-                // Show success message
-                alertElement.textContent = 'Account created successfully! Redirecting to login...';
-                alertElement.className = 'alert alert-success';
-                alertElement.style.display = 'block';
-                
-                // Redirect to login page
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-                
             } catch (error) {
                 console.error('Registration error:', error);
-                // Show error message
-                alertElement.textContent = error.message || 'Unknown error occurred';
-                alertElement.className = 'alert alert-error';
-                alertElement.style.display = 'block';
+                
+                // More descriptive error messages based on error type
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    showAlert('Network error. Please check your internet connection.', 'error');
+                } else if (error.name === 'SyntaxError') {
+                    showAlert('The server returned an invalid response. Try again later.', 'error');
+                } else {
+                    showAlert('An unexpected error occurred. Please try again later.', 'error');
+                }
+            } finally {
+                // Reset button state
+                submitButton.textContent = originalButtonText;
+                submitButton.disabled = false;
             }
         });
+        
+        // Helper functions
+        function showAlert(message, type) {
+            const alertElement = document.getElementById('alert');
+            alertElement.textContent = message;
+            alertElement.className = `alert alert-${type}`;
+            alertElement.style.display = 'block';
+        }
+        
+        function resetFormErrors() {
+            // Reset any highlighted fields
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.style.borderColor = '';
+            });
+        }
+        
+        function highlightField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.style.borderColor = 'var(--error)';
+                field.focus();
+            }
+        }
     </script>
 </body>
 </html> 
