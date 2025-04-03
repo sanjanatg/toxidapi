@@ -115,7 +115,7 @@ async def custom_swagger_ui_html():
         swagger_css_url="/static/swagger-ui.css",
     )
 
-# Root endpoint redirects to demo page
+# Add a special error handler for the root route
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """
@@ -131,8 +131,6 @@ async def root():
             except Exception as e:
                 logger.error(f"Error reading index.html: {str(e)}")
                 # Continue to fallback
-                
-        # Fallback to embedded HTML if index.html doesn't exist or couldn't be read
     except Exception as e:
         logger.error(f"Error in root endpoint: {str(e)}")
     
@@ -145,7 +143,7 @@ async def root():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ToxidAPI - Text Analysis with AI</title>
         <style>
-            /* Simplified dark theme CSS for fallback */
+            /* Dark theme CSS */
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background-color: #121212;
@@ -160,19 +158,44 @@ async def root():
                 padding: 20px;
                 background-color: #1E1E1E;
                 border-radius: 8px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             }
             h1, h2 { color: #9D4EDD; }
             a { color: #9D4EDD; }
             p { margin-bottom: 16px; }
+            .status { 
+                padding: 10px; 
+                border-radius: 4px; 
+                margin: 20px 0;
+                background-color: rgba(255,53,71,0.1);
+                border-left: 4px solid #ff3547;
+            }
+            .button {
+                display: inline-block;
+                background-color: #9D4EDD;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 4px;
+                text-decoration: none;
+                margin-top: 10px;
+            }
         </style>
     </head>
     <body>
         <div class="container">
             <h1>ToxidAPI</h1>
             <p>AI-powered text analysis for toxicity, sentiment, and content moderation.</p>
-            <h2>Error Loading UI</h2>
-            <p>The full UI couldn't be loaded. You can still access the API directly.</p>
-            <p>Please check the <a href="/docs">API documentation</a> for more information.</p>
+            
+            <div class="status">
+                <h2>Server Status</h2>
+                <p>The API is currently experiencing some technical difficulties with the database connection.</p>
+                <p>You can still try the API's core functionality:</p>
+            </div>
+            
+            <p>
+                <a href="/analyze" class="button">Try Analysis Demo</a>
+                <a href="/docs" class="button">API Documentation</a>
+            </p>
         </div>
     </body>
     </html>
