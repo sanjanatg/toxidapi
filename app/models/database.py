@@ -15,10 +15,14 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./toxidapi.db")
 
 # For PostgreSQL with SSL (required for Neon and other cloud providers)
 if DATABASE_URL.startswith("postgres"):
-    # Add SSL parameters if not already present
-    if "sslmode" not in DATABASE_URL:
-        DATABASE_URL += "?sslmode=require"
-    logger.info(f"Using PostgreSQL connection with sslmode=require")
+    # Add specific parameters for NeonDB in serverless environment
+    if "?" in DATABASE_URL:
+        DATABASE_URL += "&"
+    else:
+        DATABASE_URL += "?"
+    
+    DATABASE_URL += "sslmode=require&connect_timeout=10&pool_timeout=10&pool_pre_ping=true&pool_recycle=300"
+    logger.info(f"Using enhanced PostgreSQL connection parameters for serverless environment")
 
 # Create base class for models
 Base = declarative_base()
@@ -54,8 +58,8 @@ class DBAPIKey(Base):
 # Functions to handle database connections with retries
 def create_db_engine():
     """Create database engine with retries for cloud environments like Vercel"""
-    max_retries = 3
-    retry_delay = 1  # seconds
+    max_retries = 2  # Reduced from 3 for serverless environment
+    retry_delay = 0.5  # Reduced initial delay
     
     for attempt in range(max_retries):
         try:
@@ -69,12 +73,25 @@ def create_db_engine():
                     masked_url = log_url[0] + "://" + auth_part.split(":")[0] + ":***@" + log_url[1].split("@")[1]
                     logger.info(f"Database provider: {masked_url.split('://')[0]}")
             
-            # Create the engine
-            engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
+            # Create an engine optimized for serverless
+            engine = create_engine(
+                DATABASE_URL,
+                echo=False,
+                future=True,
+                pool_pre_ping=True,
+                pool_recycle=300,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=10,
+                connect_args={"connect_timeout": 10}
+            )
             
-            # Test the connection
-            connection = engine.connect()
-            connection.close()
+            # Test the connection with a quick timeout
+            logger.info("Testing database connection")
+            with engine.connect() as connection:
+                # Run a simple query to verify connection
+                connection.execute("SELECT 1")
+                logger.info("Database connection test successful")
             
             logger.info("Database connection established successfully")
             return engine

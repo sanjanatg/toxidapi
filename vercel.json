@@ -68,6 +68,12 @@
             "dest": "app/main.py"
         }
     ],
+    "functions": {
+        "app/main.py": {
+            "memory": 1024,
+            "maxDuration": 15
+        }
+    },
     "env": {
         "PYTHON_VERSION": "3.9",
         "REDIS_URL": "${REDIS_URL}",
