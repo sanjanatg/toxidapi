@@ -44,6 +44,14 @@
             "dest": "app/main.py"
         },
         {
+            "src": "/signup",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/register",
+            "dest": "app/main.py"
+        },
+        {
             "src": "/auth/(.*)",
             "dest": "app/main.py"
         },
