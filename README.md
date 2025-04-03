@@ -253,5 +253,5 @@ try {
 ## Support
 
 If you have any questions or need help, please contact us:
-- Email: support@toxidapi.com
+- Email: [sanjanatg2126@gmail.com](mailto:sanjanatg2126@gmail.com)
 - [GitHub Issues](https://github.com/sanjanatg/toxidapi/issues)
