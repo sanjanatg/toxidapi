@@ -3,7 +3,11 @@
     "builds": [
         {
             "src": "app/main.py",
-            "use": "@vercel/python"
+            "use": "@vercel/python",
+            "config": {
+                "maxLambdaSize": "15mb",
+                "runtime": "python3.9"
+            }
         },
         {
             "src": "app/static/**",
@@ -68,12 +72,6 @@
             "dest": "app/main.py"
         }
     ],
-    "functions": {
-        "app/main.py": {
-            "memory": 1024,
-            "maxDuration": 15
-        }
-    },
     "env": {
         "PYTHON_VERSION": "3.9",
         "REDIS_URL": "${REDIS_URL}",
