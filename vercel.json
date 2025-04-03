@@ -16,6 +16,10 @@
     ],
     "routes": [
         {
+            "src": "/static/(.*)",
+            "dest": "/app/static/$1"
+        },
+        {
             "src": "/",
             "dest": "app/main.py"
         },
@@ -60,15 +64,19 @@
             "dest": "app/main.py"
         },
         {
-            "src": "/static/(.*)",
-            "dest": "app/static/$1"
-        },
-        {
             "src": "/api/v1/(.*)",
             "dest": "app/main.py"
         },
         {
             "src": "/api/(.*)",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/health",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/(.*)",
             "dest": "app/main.py"
         }
     ],

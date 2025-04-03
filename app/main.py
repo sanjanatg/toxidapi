@@ -124,17 +124,25 @@ async def root():
     try:
         # Read the index.html file (demo UI)
         index_html_path = Path(__file__).parent / "static" / "index.html"
+        logger.info(f"Attempting to read index.html from {index_html_path}")
+        
         if index_html_path.exists():
+            logger.info(f"index.html exists at {index_html_path}")
             try:
                 with open(index_html_path, "r", encoding="utf-8") as file:
-                    return file.read()
+                    content = file.read()
+                    logger.info(f"Successfully read index.html ({len(content)} bytes)")
+                    return content
             except Exception as e:
                 logger.error(f"Error reading index.html: {str(e)}")
                 # Continue to fallback
+        else:
+            logger.warning(f"index.html not found at {index_html_path}")
     except Exception as e:
         logger.error(f"Error in root endpoint: {str(e)}")
     
     # Fallback to embedded HTML
+    logger.warning("Using fallback embedded HTML for root endpoint")
     return """
     <!DOCTYPE html>
     <html lang="en">
@@ -179,17 +187,50 @@ async def root():
                 text-decoration: none;
                 margin-top: 10px;
             }
+            .navbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                border-bottom: 1px solid #333;
+                margin-bottom: 2rem;
+            }
+            .nav-buttons {
+                display: flex;
+                gap: 1rem;
+            }
+            .btn {
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                text-decoration: none;
+                color: white;
+            }
+            .btn-outline {
+                border: 1px solid #444;
+            }
+            .btn-primary {
+                background: #ff3547;
+            }
         </style>
     </head>
     <body>
         <div class="container">
+            <nav class="navbar">
+                <a href="/" style="font-size: 1.5rem; font-weight: bold; color: white; text-decoration: none;">ToxidAPI</a>
+                <div class="nav-buttons">
+                    <a href="/analyze" class="btn btn-outline">Analyze</a>
+                    <a href="/docs" class="btn btn-outline">Docs</a>
+                    <a href="/signin" class="btn btn-outline">Sign in</a>
+                    <a href="/signup" class="btn btn-primary">Sign up</a>
+                </div>
+            </nav>
+            
             <h1>ToxidAPI</h1>
             <p>AI-powered text analysis for toxicity, sentiment, and content moderation.</p>
             
             <div class="status">
                 <h2>Server Status</h2>
-                <p>The API is currently experiencing some technical difficulties with the database connection.</p>
-                <p>You can still try the API's core functionality:</p>
+                <p>Welcome to ToxidAPI! This is a fallback page - your static files may not be deployed correctly.</p>
             </div>
             
             <p>
@@ -265,26 +306,52 @@ async def limits_page():
 @app.get("/signin", response_class=HTMLResponse)
 async def login_page():
     """Serves the login page"""
+    logger.info("Login/signin page requested")
     try:
         login_html_path = Path(__file__).parent / "static" / "login.html"
+        logger.info(f"Attempting to read login.html from {login_html_path}")
+        
         if login_html_path.exists():
-            with open(login_html_path, "r", encoding="utf-8") as file:
-                return file.read()
+            logger.info(f"login.html exists at {login_html_path}")
+            try:
+                with open(login_html_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                    logger.info(f"Successfully read login.html ({len(content)} bytes)")
+                    return content
+            except Exception as e:
+                logger.error(f"Error reading login.html: {str(e)}")
+        else:
+            logger.warning(f"login.html not found at {login_html_path}")
     except Exception as e:
-        logger.error(f"Error reading login.html: {str(e)}")
+        logger.error(f"Error in login_page endpoint: {str(e)}")
+    
+    logger.warning("Redirecting to root due to login page error")
     return RedirectResponse(url="/")
 
 @app.get("/register", response_class=HTMLResponse)
 @app.get("/signup", response_class=HTMLResponse)
 async def register_page():
     """Serves the registration page"""
+    logger.info("Register/signup page requested")
     try:
         register_html_path = Path(__file__).parent / "static" / "register.html"
+        logger.info(f"Attempting to read register.html from {register_html_path}")
+        
         if register_html_path.exists():
-            with open(register_html_path, "r", encoding="utf-8") as file:
-                return file.read()
+            logger.info(f"register.html exists at {register_html_path}")
+            try:
+                with open(register_html_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                    logger.info(f"Successfully read register.html ({len(content)} bytes)")
+                    return content
+            except Exception as e:
+                logger.error(f"Error reading register.html: {str(e)}")
+        else:
+            logger.warning(f"register.html not found at {register_html_path}")
     except Exception as e:
-        logger.error(f"Error reading register.html: {str(e)}")
+        logger.error(f"Error in register_page endpoint: {str(e)}")
+    
+    logger.warning("Redirecting to root due to register page error")
     return RedirectResponse(url="/")
 
 # Health check endpoint
