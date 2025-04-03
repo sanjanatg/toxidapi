@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 import logging
 import traceback
 from pydantic import ValidationError
+from email_validator import EmailNotValidError, EmailSyntaxError
 
 from app.models.database import get_db
 from app.models.user import UserCreate, UserLogin, UserResponse, APIKeyCreate, APIKeyResponse
@@ -94,6 +95,18 @@ async def register(user: UserCreate, db: Session = Depends(get_db), request: Req
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Password must be at least 8 characters long"
             )
+        
+        # Specific handling for email validation errors    
+        try:
+            # The email should already be validated by Pydantic, but let's add an explicit check
+            from email_validator import validate_email
+            validate_email(user.email)
+        except (EmailNotValidError, EmailSyntaxError) as e:
+            logger.warning(f"Invalid email format: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid email format: {str(e)}"
+            )
             
         # Attempt registration
         try:
@@ -110,6 +123,12 @@ async def register(user: UserCreate, db: Session = Depends(get_db), request: Req
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Registration failed. Please try again later."
             )
+    except ValidationError as ve:
+        logger.warning(f"Validation error during registration: {str(ve)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid registration data: {str(ve)}"
+        )
     except HTTPException:
         raise
     except Exception as e:

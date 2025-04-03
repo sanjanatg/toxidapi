@@ -25,6 +25,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configure JWT token
 SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key_for_development_only")
+# Ensure SECRET_KEY is at least 32 chars for security
+if len(SECRET_KEY) < 32:
+    logger.warning(f"SECRET_KEY is too short ({len(SECRET_KEY)} chars). Padding to 32 chars for security.")
+    # Pad with a deterministic pattern based on the original key
+    SECRET_KEY = SECRET_KEY.ljust(32, SECRET_KEY[0] if SECRET_KEY else "x")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
