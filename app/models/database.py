@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, OperationalError
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, OperationalError, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.pool import NullPool
 import os
 from datetime import datetime
 import logging
@@ -48,34 +49,34 @@ class DBAPIKey(Base):
 
 # Function to create a fresh connection engine
 def create_db_engine():
-    """Create a fresh database engine - no connection pooling for serverless"""
+    """Create a fresh database engine with NullPool for serverless"""
     try:
         # For PostgreSQL, use special parameters optimized for serverless
         connect_args = {}
         if DATABASE_URL.startswith("postgres"):
-            # Add serverless-friendly parameters
-            if "?" in DATABASE_URL:
-                db_url = DATABASE_URL + "&statement_timeout=5000&connect_timeout=5"
-            else:
-                db_url = DATABASE_URL + "?statement_timeout=5000&connect_timeout=5"
-                
+            # Build URL with proper parameters
+            base_url = DATABASE_URL.split("?")[0] if "?" in DATABASE_URL else DATABASE_URL
+            params = ["sslmode=require", "connect_timeout=5"]
+            db_url = f"{base_url}?{'&'.join(params)}"
             logger.info("Creating PostgreSQL engine with serverless optimizations")
         else:
             db_url = DATABASE_URL
+            if db_url.startswith("sqlite"):
+                connect_args["check_same_thread"] = False
             logger.info(f"Creating {db_url.split('://')[0]} engine")
         
-        # Create a new engine without connection pooling
+        # Create engine with NullPool - critical for serverless
         engine = create_engine(
             db_url,
             echo=False,
-            poolclass=None,  # Disable connection pooling for serverless
+            poolclass=NullPool,  # Explicitly use NullPool for serverless
             connect_args=connect_args
         )
         
         # Test connection - quick and simple
         try:
             with engine.connect() as conn:
-                conn.execute("SELECT 1")
+                conn.execute(text("SELECT 1"))  # Use text() for SQLAlchemy 2.0 compatibility
             logger.info("Database connection test successful")
         except Exception as conn_error:
             logger.error(f"Database connection test failed: {str(conn_error)}")
@@ -85,11 +86,14 @@ def create_db_engine():
         logger.error(f"Fatal error creating database engine: {str(e)}")
         # Fall back to SQLite
         logger.warning("Falling back to SQLite in-memory database")
-        return create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        return create_engine("sqlite:///:memory:", 
+                            connect_args={"check_same_thread": False},
+                            poolclass=NullPool)
 
 # Simple function to get a fresh session
 def get_db():
     """Get a fresh database session for each request"""
+    engine = None
     try:
         # Create a new engine for each session in serverless environment
         engine = create_db_engine()
@@ -108,19 +112,26 @@ def get_db():
             yield db
         finally:
             db.close()
-            engine.dispose()  # Explicitly close all connections
+            if engine:
+                engine.dispose()  # Explicitly close all connections
     except Exception as session_error:
         logger.error(f"Session error: {str(session_error)}")
         # If we can't create a real DB session, create an in-memory one
-        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
-        Base.metadata.create_all(bind=engine)
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        db = SessionLocal()
         try:
-            yield db
-        finally:
-            db.close()
-            engine.dispose()
-
-# Import the NullPool class
-from sqlalchemy.pool import NullPool 
+            in_memory_engine = create_engine(
+                "sqlite:///:memory:", 
+                connect_args={"check_same_thread": False},
+                poolclass=NullPool
+            )
+            Base.metadata.create_all(bind=in_memory_engine)
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
+            db = SessionLocal()
+            try:
+                yield db
+            finally:
+                db.close()
+                in_memory_engine.dispose()
+        except Exception as fallback_error:
+            logger.critical(f"Critical fallback error: {str(fallback_error)}")
+            # At this point, we can't do much more
+            yield None 
