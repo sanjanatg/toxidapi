@@ -9,20 +9,11 @@ import json
 
 # Configure logging
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Get database URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./toxidapi.db")
-
-# For PostgreSQL with SSL (required for Neon and other cloud providers)
-if DATABASE_URL.startswith("postgres"):
-    # Add specific parameters for NeonDB in serverless environment
-    if "?" in DATABASE_URL:
-        DATABASE_URL += "&"
-    else:
-        DATABASE_URL += "?"
-    
-    DATABASE_URL += "sslmode=require&connect_timeout=10&pool_timeout=10&pool_pre_ping=true&pool_recycle=300"
-    logger.info(f"Using enhanced PostgreSQL connection parameters for serverless environment")
+logger.info(f"Database type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'unknown'}")
 
 # Create base class for models
 Base = declarative_base()
@@ -55,128 +46,81 @@ class DBAPIKey(Base):
     # Relationship with user
     user = relationship("DBUser", back_populates="api_keys")
 
-# Functions to handle database connections with retries
+# Function to create a fresh connection engine
 def create_db_engine():
-    """Create database engine with retries for cloud environments like Vercel"""
-    max_retries = 2  # Reduced from 3 for serverless environment
-    retry_delay = 0.5  # Reduced initial delay
-    
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Attempting database connection (attempt {attempt+1}/{max_retries})")
-            # Mask the connection string password for logging
-            log_url = DATABASE_URL.split("://")
-            if len(log_url) > 1 and "@" in log_url[1]:
-                auth_part = log_url[1].split("@")[0]
-                if ":" in auth_part:
-                    # Mask the password
-                    masked_url = log_url[0] + "://" + auth_part.split(":")[0] + ":***@" + log_url[1].split("@")[1]
-                    logger.info(f"Database provider: {masked_url.split('://')[0]}")
-            
-            # Create an engine optimized for serverless
-            engine = create_engine(
-                DATABASE_URL,
-                echo=False,
-                future=True,
-                pool_pre_ping=True,
-                pool_recycle=300,
-                pool_size=5,
-                max_overflow=10,
-                pool_timeout=10,
-                connect_args={"connect_timeout": 10}
-            )
-            
-            # Test the connection with a quick timeout
-            logger.info("Testing database connection")
-            with engine.connect() as connection:
-                # Run a simple query to verify connection
-                connection.execute("SELECT 1")
-                logger.info("Database connection test successful")
-            
-            logger.info("Database connection established successfully")
-            return engine
-        
-        except Exception as e:
-            logger.error(f"Database connection error (attempt {attempt+1}): {str(e)}")
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-                retry_delay *= 2  # Exponential backoff
+    """Create a fresh database engine - no connection pooling for serverless"""
+    try:
+        # For PostgreSQL, use special parameters optimized for serverless
+        connect_args = {}
+        if DATABASE_URL.startswith("postgres"):
+            # Add serverless-friendly parameters
+            if "?" in DATABASE_URL:
+                db_url = DATABASE_URL + "&statement_timeout=5000&connect_timeout=5"
             else:
-                logger.error("All database connection attempts failed")
-                # Fallback to SQLite
-                logger.warning("Falling back to SQLite database")
-                sqlite_url = "sqlite:///./fallback.db"
-                return create_engine(sqlite_url)
-
-# Create SQLAlchemy engine and session
-try:
-    engine = create_db_engine()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-except Exception as e:
-    logger.critical(f"Critical database initialization error: {str(e)}")
-    # Emergency fallback
-    fallback_url = "sqlite:///./emergency.db"
-    engine = create_engine(fallback_url)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    logger.warning(f"Using emergency fallback database: {fallback_url}")
-
-# Function to get a database session
-def get_db():
-    """Get a database session with error handling"""
-    db = SessionLocal()
-    try:
-        yield db
-    except Exception as e:
-        logger.error(f"Database session error: {str(e)}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
-
-# Create tables
-def create_tables():
-    """Create database tables with error handling"""
-    try:
-        logger.info("Attempting to create database tables")
-        # Check if tables already exist
-        inspector = inspect(engine)
-        existing_tables = inspector.get_table_names()
-        logger.info(f"Existing tables: {existing_tables}")
-        
-        if "users" in existing_tables and "api_keys" in existing_tables:
-            logger.info("Database tables already exist")
-        else:
-            # Create the tables
-            Base.metadata.create_all(bind=engine)
-            logger.info("Database tables created successfully")
-        
-        # Verify tables were created
-        verify_tables = inspector.get_table_names()
-        if "users" not in verify_tables or "api_keys" not in verify_tables:
-            logger.error(f"Tables were not created properly. Current tables: {verify_tables}")
-            raise Exception("Database tables were not created properly")
-        
-        logger.info("Database initialization complete")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {str(e)}")
-        logger.error("Application may not function correctly")
-        
-        # Try to diagnose the issue
-        try:
-            if isinstance(e, OperationalError):
-                logger.error("This appears to be a database connection or operational error")
-                logger.error(f"DATABASE_URL type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'unknown'}")
+                db_url = DATABASE_URL + "?statement_timeout=5000&connect_timeout=5"
                 
-                # Check if we can connect at all
-                logger.info("Attempting basic connection test...")
-                conn = engine.connect()
-                conn.close()
-                logger.info("Basic connection successful, but schema creation failed")
-            else:
-                logger.error(f"Error type: {type(e).__name__}")
-        except Exception as diagnostic_error:
-            logger.error(f"Diagnostic error: {str(diagnostic_error)}")
+            logger.info("Creating PostgreSQL engine with serverless optimizations")
+        else:
+            db_url = DATABASE_URL
+            logger.info(f"Creating {db_url.split('://')[0]} engine")
+        
+        # Create a new engine without connection pooling
+        engine = create_engine(
+            db_url,
+            echo=False,
+            poolclass=None,  # Disable connection pooling for serverless
+            connect_args=connect_args
+        )
+        
+        # Test connection - quick and simple
+        try:
+            with engine.connect() as conn:
+                conn.execute("SELECT 1")
+            logger.info("Database connection test successful")
+        except Exception as conn_error:
+            logger.error(f"Database connection test failed: {str(conn_error)}")
+            
+        return engine
+    except Exception as e:
+        logger.error(f"Fatal error creating database engine: {str(e)}")
+        # Fall back to SQLite
+        logger.warning("Falling back to SQLite in-memory database")
+        return create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
 
-# Initialize database on import
-create_tables() 
+# Simple function to get a fresh session
+def get_db():
+    """Get a fresh database session for each request"""
+    try:
+        # Create a new engine for each session in serverless environment
+        engine = create_db_engine()
+        
+        # Create tables if needed
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as schema_error:
+            logger.error(f"Error creating schema: {str(schema_error)}")
+        
+        # Create a new session
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        db = SessionLocal()
+        
+        try:
+            yield db
+        finally:
+            db.close()
+            engine.dispose()  # Explicitly close all connections
+    except Exception as session_error:
+        logger.error(f"Session error: {str(session_error)}")
+        # If we can't create a real DB session, create an in-memory one
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        Base.metadata.create_all(bind=engine)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+            engine.dispose()
+
+# Import the NullPool class
+from sqlalchemy.pool import NullPool 
