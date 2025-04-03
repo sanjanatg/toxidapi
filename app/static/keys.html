@@ -13,6 +13,7 @@
             --accent-color: #dc3545;
             --accent-hover: #c82333;
             --border-color: #2a2a2f;
+            --blue-accent: #4285f4;
         }
 
         * {
@@ -117,6 +118,10 @@
             background-color: var(--card-background);
             border-radius: 8px;
             padding: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .auth-section {
             text-align: center;
         }
 
@@ -136,6 +141,149 @@
         .btn-primary:hover {
             background-color: var(--accent-hover);
         }
+        
+        .btn-secondary {
+            background-color: var(--blue-accent);
+            color: var(--text-color);
+            border: none;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #3b77e0;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+        }
+        
+        .key-list {
+            list-style: none;
+            margin-top: 2rem;
+        }
+        
+        .key-item {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+        
+        .key-info {
+            flex: 1;
+        }
+        
+        .key-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .key-value {
+            font-family: monospace;
+            background-color: rgba(0,0,0,0.3);
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            word-break: break-all;
+        }
+        
+        .key-meta {
+            color: var(--secondary-text);
+            font-size: 0.85rem;
+        }
+        
+        .no-keys {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary-text);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.2);
+            color: var(--text-color);
+        }
+        
+        .key-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--card-background);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--secondary-text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background-color: rgba(0, 200, 81, 0.1);
+            border: 1px solid #00c851;
+        }
+        
+        .alert-error {
+            background-color: rgba(255, 53, 71, 0.1);
+            border: 1px solid var(--accent-color);
+        }
+        
+        .logout-btn {
+            margin-left: 1rem;
+            color: var(--secondary-text);
+        }
     </style>
 </head>
 <body>
@@ -154,16 +302,283 @@
     <main class="main-content">
         <div class="header">
             <input type="text" class="search-bar" placeholder="Search...">
-            <a href="/login" class="btn btn-outline">Log in</a>
+            <div id="auth-buttons">
+                <a href="/login" class="btn btn-outline" id="login-btn">Log in</a>
+            </div>
         </div>
 
         <h1>API Keys</h1>
         
-        <div class="keys-section">
+        <!-- Not logged in view -->
+        <div class="keys-section auth-section" id="not-logged-in">
             <h2>Your API Keys</h2>
             <p>Please sign in to manage your API keys.</p>
             <a href="/signin" class="btn btn-primary">Sign in</a>
         </div>
+        
+        <!-- Logged in view -->
+        <div id="logged-in" style="display: none;">
+            <div class="keys-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Your API Keys</h2>
+                    <button class="btn btn-primary" id="create-key-btn">Create New Key</button>
+                </div>
+                
+                <div id="alert" class="alert" style="display: none;"></div>
+                
+                <div id="keys-container">
+                    <ul class="key-list" id="key-list">
+                        <!-- Keys will be dynamically added here -->
+                    </ul>
+                    <div class="no-keys" id="no-keys" style="display: none;">
+                        <p>You don't have any API keys yet.</p>
+                        <p>Create your first API key to start using the ToxidAPI.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="keys-section">
+                <h2>Using Your API Key</h2>
+                <p>Include your API key in the <code>X-API-Key</code> header when making requests to the API.</p>
+                <pre><code>curl -X POST "https://toxidapi.vercel.app/api/v2/analyze" \
+     -H "Content-Type: application/json" \
+     -H "X-API-Key: YOUR_API_KEY" \
+     -d '{"text": "Your text to analyze"}'</code></pre>
+            </div>
+        </div>
+        
+        <!-- Create Key Modal -->
+        <div class="key-modal" id="create-key-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Create New API Key</h2>
+                    <button class="modal-close" id="close-modal">&times;</button>
+                </div>
+                <form id="create-key-form">
+                    <div class="form-group">
+                        <label for="key-name" class="form-label">Key Name</label>
+                        <input type="text" id="key-name" class="form-input" placeholder="My API Key" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline" id="cancel-create">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create Key</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
+    
+    <script>
+        // Check if user is logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            
+            console.log('Token:', token ? 'exists' : 'not found');
+            console.log('User:', user);
+            
+            if (token && user) {
+                // Show logged in view
+                document.getElementById('not-logged-in').style.display = 'none';
+                document.getElementById('logged-in').style.display = 'block';
+                
+                // Update auth buttons
+                const authButtons = document.getElementById('auth-buttons');
+                authButtons.innerHTML = `
+                    <span>${user.email}</span>
+                    <a href="#" class="logout-btn" id="logout-btn">Logout</a>
+                `;
+                
+                // Add logout event listener
+                document.getElementById('logout-btn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.reload();
+                });
+                
+                // Load user's API keys
+                loadApiKeys();
+            }
+        });
+        
+        // Load API keys
+        async function loadApiKeys() {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                console.log('Fetching API keys...');
+                const response = await fetch('/auth/api-keys', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('API keys response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API keys error:', errorData);
+                    throw new Error(errorData.detail || 'Failed to load API keys');
+                }
+                
+                const keys = await response.json();
+                console.log('API keys loaded:', keys);
+                displayApiKeys(keys);
+            } catch (error) {
+                console.error('Error loading API keys:', error);
+                showAlert(error.message, 'error');
+            }
+        }
+        
+        // Display API keys
+        function displayApiKeys(keys) {
+            const keyList = document.getElementById('key-list');
+            const noKeys = document.getElementById('no-keys');
+            
+            keyList.innerHTML = '';
+            
+            if (!keys || keys.length === 0) {
+                noKeys.style.display = 'block';
+                return;
+            }
+            
+            noKeys.style.display = 'none';
+            
+            keys.forEach(key => {
+                const lastUsed = key.last_used 
+                    ? new Date(key.last_used).toLocaleString() 
+                    : 'Never used';
+                
+                const li = document.createElement('li');
+                li.className = 'key-item';
+                li.innerHTML = `
+                    <div class="key-info">
+                        <h3>${key.name}</h3>
+                        <div class="key-value">${key.key}</div>
+                        <div class="key-meta">
+                            Created: ${new Date(key.created_at).toLocaleString()} | 
+                            Last used: ${lastUsed}
+                        </div>
+                    </div>
+                    <div class="key-actions">
+                        <button class="btn btn-danger delete-key" data-key-id="${key.id}">Delete</button>
+                    </div>
+                `;
+                keyList.appendChild(li);
+            });
+            
+            // Add delete event listeners
+            document.querySelectorAll('.delete-key').forEach(button => {
+                button.addEventListener('click', async () => {
+                    if (confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+                        await deleteApiKey(button.dataset.keyId);
+                    }
+                });
+            });
+        }
+        
+        // Show alert
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Create API key
+        document.getElementById('create-key-btn').addEventListener('click', () => {
+            document.getElementById('create-key-modal').style.display = 'flex';
+        });
+        
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('create-key-modal').style.display = 'none';
+        });
+        
+        document.getElementById('cancel-create').addEventListener('click', () => {
+            document.getElementById('create-key-modal').style.display = 'none';
+        });
+        
+        document.getElementById('create-key-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('key-name').value;
+            const token = localStorage.getItem('token');
+            
+            try {
+                console.log('Creating API key:', name);
+                const response = await fetch('/auth/api-keys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name })
+                });
+                
+                console.log('Create API key response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Create API key error:', errorData);
+                    throw new Error(errorData.detail || 'Failed to create API key');
+                }
+                
+                const key = await response.json();
+                console.log('API key created:', key);
+                
+                // Close modal and reset form
+                document.getElementById('create-key-modal').style.display = 'none';
+                document.getElementById('key-name').value = '';
+                
+                // Show success message
+                showAlert(`API key "${name}" created successfully`, 'success');
+                
+                // Reload keys
+                loadApiKeys();
+                
+            } catch (error) {
+                console.error('Error creating API key:', error);
+                showAlert(error.message, 'error');
+            }
+        });
+        
+        // Delete API key
+        async function deleteApiKey(keyId) {
+            const token = localStorage.getItem('token');
+            
+            try {
+                console.log('Deleting API key:', keyId);
+                const response = await fetch(`/auth/api-keys/${keyId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                console.log('Delete API key response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Delete API key error:', errorData);
+                    throw new Error(errorData.detail || 'Failed to delete API key');
+                }
+                
+                showAlert('API key deleted successfully', 'success');
+                
+                // Reload keys
+                loadApiKeys();
+                
+            } catch (error) {
+                console.error('Error deleting API key:', error);
+                showAlert(error.message, 'error');
+            }
+        }
+    </script>
 </body>
 </html> 

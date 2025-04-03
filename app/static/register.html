@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - ToxidAPI</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #ff3547;
+            --secondary: #4285f4;
+            --text: #f1f1f1;
+            --error: #ff3547;
+            --success: #00c851;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: a auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--primary);
+        }
+        
+        .logo span {
+            color: var(--secondary);
+        }
+        
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .nav a:hover {
+            color: var(--primary);
+        }
+        
+        .auth-form {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: var(--secondary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #252525;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        
+        .form-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 30px;
+        }
+        
+        .form-button:hover {
+            background-color: #ff1a30;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .form-footer a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+        
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .alert-error {
+            background-color: rgba(255, 53, 71, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+        
+        .alert-success {
+            background-color: rgba(0, 200, 81, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+        
+        .terms {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="/" class="logo">Toxid<span>API</span></a>
+            <nav class="nav">
+                <a href="/docs">Documentation</a>
+                <a href="/analyze">Try It</a>
+                <a href="/login">Login</a>
+            </nav>
+        </header>
+        
+        <div class="auth-form">
+            <h2 class="form-title">Create an Account</h2>
+            
+            <div id="alert" class="alert"></div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" required minlength="8">
+                    <p class="terms">Password must be at least 8 characters long.</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm-password" class="form-label">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" class="form-input" required>
+                </div>
+                
+                <p class="terms">
+                    By creating an account, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.
+                </p>
+                
+                <button type="submit" class="form-button">Sign Up</button>
+            </form>
+            
+            <div class="form-footer">
+                Already have an account? <a href="/login">Login</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            const alertElement = document.getElementById('alert');
+            
+            // Validate password match
+            if (password !== confirmPassword) {
+                alertElement.textContent = 'Passwords do not match';
+                alertElement.className = 'alert alert-error';
+                alertElement.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Registration failed');
+                }
+                
+                // Show success message
+                alertElement.textContent = 'Account created successfully! Redirecting to login...';
+                alertElement.className = 'alert alert-success';
+                alertElement.style.display = 'block';
+                
+                // Redirect to login page
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                
+            } catch (error) {
+                // Show error message
+                alertElement.textContent = error.message;
+                alertElement.className = 'alert alert-error';
+                alertElement.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

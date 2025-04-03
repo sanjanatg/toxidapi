@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 import logging
 import time
@@ -10,7 +10,11 @@ import os
 
 # Import the API routers
 from app.api.routes import router as api_router
-from app.api.rate_limiter import rate_limit_middleware
+from app.api.auth_routes import router as auth_router
+from app.api.rate_limiter import rate_limit_middleware, validate_api_key
+
+# Database session dependency
+from app.models.database import get_db
 
 # Configure logging
 logging.basicConfig(
@@ -83,6 +87,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include API routes
 app.include_router(api_router)
+app.include_router(auth_router)
 
 # Add middleware to measure processing time
 @app.middleware("http")
@@ -236,24 +241,36 @@ async def limits_page():
 @app.get("/signin", response_class=HTMLResponse)
 async def signin_redirect():
     """Redirects to login page"""
-    return RedirectResponse(url="/login")
+    try:
+        login_html_path = Path(__file__).parent / "static" / "login.html"
+        if login_html_path.exists():
+            with open(login_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading login.html: {str(e)}")
+    return RedirectResponse(url="/")
 
 @app.get("/signup", response_class=HTMLResponse)
 async def signup_page():
     """Redirects to registration page"""
-    return RedirectResponse(url="/register")
+    try:
+        register_html_path = Path(__file__).parent / "static" / "register.html"
+        if register_html_path.exists():
+            with open(register_html_path, "r", encoding="utf-8") as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f"Error reading register.html: {str(e)}")
+    return RedirectResponse(url="/")
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
     """Serves the login page"""
-    # For now, redirect to home since we haven't created the login page yet
-    return RedirectResponse(url="/")
+    return await signin_redirect()
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page():
     """Serves the registration page"""
-    # For now, redirect to home since we haven't created the registration page yet
-    return RedirectResponse(url="/")
+    return await signup_page()
 
 # Health check endpoint
 @app.get("/health", include_in_schema=False)

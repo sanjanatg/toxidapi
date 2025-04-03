@@ -6,7 +6,7 @@ import os
 from pydantic import BaseModel
 
 from app.api.models import TextRequest, AnalysisResponse
-from app.api.rate_limiter import rate_limit_middleware
+from app.api.rate_limiter import validate_api_key
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -113,54 +113,6 @@ class APIError(BaseModel):
     message: str
     details: Optional[Dict[str, Any]] = None
 
-# Optional API key authentication
-async def verify_api_key(
-    request: Request,
-    response: Response,
-    x_api_key: Optional[str] = Header(None)
-):
-    """
-    Optional API key verification middleware.
-    If API_KEY_REQUIRED is set to True in environment, this will validate the key.
-    Also applies rate limiting based on the API key or client IP.
-    """
-    try:
-        # Check rate limits first
-        await rate_limit_middleware(request, x_api_key)
-        
-        # Add rate limit headers to response
-        if hasattr(request.state, 'rate_limit_headers'):
-            for header, value in request.state.rate_limit_headers.items():
-                response.headers[header] = value
-        
-        # Verify API key if required
-        if os.environ.get("API_KEY_REQUIRED", "false").lower() == "true":
-            if not x_api_key:
-                raise HTTPException(
-                    status_code=401,
-                    detail=APIError(
-                        error="unauthorized",
-                        code="API_KEY_MISSING",
-                        message="API key is required"
-                    ).dict()
-                )
-            expected_key = os.environ.get("API_KEY")
-            if not expected_key or x_api_key != expected_key:
-                raise HTTPException(
-                    status_code=403,
-                    detail=APIError(
-                        error="forbidden",
-                        code="INVALID_API_KEY",
-                        message="Invalid API key"
-                    ).dict()
-                )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in verify_api_key: {str(e)}")
-    
-    return x_api_key
-
 # API endpoint to analyze text
 @router.post(
     "/analyze", 
@@ -182,7 +134,7 @@ async def analyze_endpoint(
     request: TextRequest, 
     request_obj: Request, 
     response: Response,
-    api_key: str = Depends(verify_api_key)
+    api_key: str = Depends(validate_api_key)
 ):
     """
     Analyze text using Google's Gemini AI for toxicity, sentiment, and content moderation.
@@ -265,7 +217,7 @@ async def analyze_endpoint(
 async def stats_endpoint(
     request: Request,
     response: Response,
-    api_key: str = Depends(verify_api_key)
+    api_key: str = Depends(validate_api_key)
 ):
     """
     Get API usage statistics.
@@ -288,7 +240,7 @@ async def stats_endpoint(
 async def flush_cache(
     request: Request,
     response: Response,
-    api_key: str = Depends(verify_api_key)
+    api_key: str = Depends(validate_api_key)
 ):
     """
     Flush the result cache.
@@ -323,7 +275,7 @@ async def batch_analyze_endpoint(
     request: Dict[str, list],
     request_obj: Request,
     response: Response,
-    api_key: str = Depends(verify_api_key)
+    api_key: str = Depends(validate_api_key)
 ):
     """
     Analyze multiple texts in batch mode.

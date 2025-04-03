@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ToxidAPI</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #ff3547;
+            --secondary: #4285f4;
+            --text: #f1f1f1;
+            --error: #ff3547;
+            --success: #00c851;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: var(--primary);
+        }
+        
+        .logo span {
+            color: var(--secondary);
+        }
+        
+        .nav {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .nav a:hover {
+            color: var(--primary);
+        }
+        
+        .auth-form {
+            max-width: 400px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            color: var(--secondary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #252525;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+        
+        .form-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 30px;
+        }
+        
+        .form-button:hover {
+            background-color: #ff1a30;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .form-footer a {
+            color: var(--secondary);
+            text-decoration: none;
+        }
+        
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .alert-error {
+            background-color: rgba(255, 53, 71, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+        
+        .alert-success {
+            background-color: rgba(0, 200, 81, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="/" class="logo">Toxid<span>API</span></a>
+            <nav class="nav">
+                <a href="/docs">Documentation</a>
+                <a href="/analyze">Try It</a>
+                <a href="/signup">Sign Up</a>
+            </nav>
+        </header>
+        
+        <div class="auth-form">
+            <h2 class="form-title">Login to Your Account</h2>
+            
+            <div id="alert" class="alert"></div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" required>
+                </div>
+                
+                <button type="submit" class="form-button">Login</button>
+            </form>
+            
+            <div class="form-footer">
+                Don't have an account? <a href="/signup">Sign Up</a>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we can connect to the API
+            fetch('/api/v2/stats')
+                .then(response => {
+                    console.log('API connection test:', response.status);
+                    if (response.status >= 200 && response.status < 300) {
+                        console.log('API is available');
+                    } else {
+                        console.warn('API returned status:', response.status);
+                    }
+                })
+                .catch(error => {
+                    console.error('API connection test failed:', error);
+                });
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const alertElement = document.getElementById('alert');
+            alertElement.style.display = 'none';
+            
+            try {
+                console.log('Attempting login with email:', email);
+                
+                // Try multiple login strategies
+                let loginSuccessful = false;
+                let loginError = null;
+                let loginData = null;
+                
+                // Strategy 1: Try JSON login endpoint
+                try {
+                    console.log('Trying JSON login endpoint');
+                    const response = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    console.log('JSON login response status:', response.status);
+                    
+                    if (response.ok) {
+                        loginData = await response.json();
+                        loginSuccessful = true;
+                        console.log('JSON login successful');
+                    } else {
+                        const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
+                        loginError = new Error(errorData.detail || 'Login failed');
+                        console.warn('JSON login failed:', errorData);
+                    }
+                } catch (error) {
+                    console.error('JSON login error:', error);
+                    loginError = error;
+                }
+                
+                // Strategy 2: Try OAuth token endpoint
+                if (!loginSuccessful) {
+                    try {
+                        console.log('Trying OAuth token endpoint');
+                        const formData = new FormData();
+                        formData.append('username', email);
+                        formData.append('password', password);
+                        
+                        const response = await fetch('/auth/token', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        console.log('OAuth login response status:', response.status);
+                        
+                        if (response.ok) {
+                            loginData = await response.json();
+                            loginSuccessful = true;
+                            console.log('OAuth login successful');
+                        } else {
+                            const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
+                            loginError = new Error(errorData.detail || 'Login failed');
+                            console.warn('OAuth login failed:', errorData);
+                        }
+                    } catch (error) {
+                        console.error('OAuth login error:', error);
+                        if (!loginError) loginError = error;
+                    }
+                }
+                
+                // Handle login result
+                if (loginSuccessful && loginData) {
+                    console.log('Login successful:', loginData);
+                    
+                    // Store user data and token in localStorage
+                    localStorage.setItem('token', loginData.access_token);
+                    localStorage.setItem('user', JSON.stringify(loginData.user));
+                    
+                    // Show success message
+                    alertElement.textContent = 'Login successful! Redirecting...';
+                    alertElement.className = 'alert alert-success';
+                    alertElement.style.display = 'block';
+                    
+                    // Redirect to API keys page
+                    setTimeout(() => {
+                        window.location.href = '/keys';
+                    }, 1000);
+                } else {
+                    throw loginError || new Error('Login failed for unknown reasons');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Show error message
+                let errorMessage = error.message || 'An error occurred during login. Please try again.';
+                
+                // Special handling for common errors
+                if (errorMessage.includes('Failed to fetch') || error.name === 'TypeError') {
+                    errorMessage = 'Cannot connect to the authentication service. The server may be unavailable. Please try again later.';
+                } else if (errorMessage.includes('404') || errorMessage.includes('NOT_FOUND')) {
+                    errorMessage = 'The authentication service is not available. Please contact support or try again later.';
+                }
+                
+                alertElement.textContent = errorMessage;
+                alertElement.className = 'alert alert-error';
+                alertElement.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

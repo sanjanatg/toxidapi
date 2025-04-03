@@ -5,11 +5,16 @@ Implements rate limiting using Redis for persistent storage.
 
 import time
 from typing import Dict, Tuple, Optional
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 import os
 import json
 import logging
 from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from sqlalchemy import update
+
+# Import database models
+from app.models.database import get_db, DBAPIKey
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -65,16 +70,30 @@ def get_client_identifier(request: Request, api_key: Optional[str] = None) -> st
         # Fallback if client info can't be accessed
         return "ip:unknown"
 
-def get_rate_limit(api_key: Optional[str] = None) -> Tuple[int, int]:
+def get_rate_limit(api_key: Optional[str] = None, db: Session = None) -> Tuple[int, int]:
     """
     Get rate limit and window for the client.
     
     Args:
         api_key: Optional API key
+        db: Database session
         
     Returns:
         Tuple of (rate_limit, window_seconds)
     """
+    # Check if this is an API key with a tier from the database
+    if api_key and db:
+        try:
+            db_api_key = db.query(DBAPIKey).filter(DBAPIKey.key == api_key).first()
+            if db_api_key:
+                # Get the tier from the user
+                user = db_api_key.user
+                if user.tier == "pro":
+                    return PRO_RATE_LIMIT, DEFAULT_RATE_WINDOW
+        except Exception as e:
+            logger.error(f"Error getting rate limit from database: {str(e)}")
+    
+    # Fallback to Redis for legacy API keys
     if api_key and redis_client:
         try:
             # Check if this is a pro API key
@@ -84,7 +103,7 @@ def get_rate_limit(api_key: Optional[str] = None) -> Tuple[int, int]:
                 if key_info.get("tier") == "pro":
                     return PRO_RATE_LIMIT, DEFAULT_RATE_WINDOW
         except Exception as e:
-            logger.error(f"Error getting rate limit: {str(e)}")
+            logger.error(f"Error getting rate limit from Redis: {str(e)}")
     
     return DEFAULT_RATE_LIMIT, DEFAULT_RATE_WINDOW
 
@@ -171,13 +190,14 @@ def check_rate_limit(identifier: str, limit: int, window: int) -> Tuple[bool, in
     in_memory_store[identifier]["count"] += 1
     return True, limit - in_memory_store[identifier]["count"], limit, in_memory_store[identifier]["reset_time"] - current_time
 
-async def rate_limit_middleware(request: Request, api_key: Optional[str] = None):
+async def rate_limit_middleware(request: Request, api_key: Optional[str] = None, db: Session = None):
     """
     FastAPI dependency for rate limiting.
     
     Args:
         request: The FastAPI request object
         api_key: Optional API key from authentication
+        db: Database session
         
     Returns:
         None if allowed, raises HTTPException if rate limited
@@ -194,7 +214,7 @@ async def rate_limit_middleware(request: Request, api_key: Optional[str] = None)
         identifier = get_client_identifier(request, api_key)
         
         # Get rate limit settings
-        limit, window = get_rate_limit(api_key)
+        limit, window = get_rate_limit(api_key, db)
         
         # Check rate limit
         is_allowed, remaining, limit, reset = check_rate_limit(identifier, limit, window)
@@ -225,4 +245,59 @@ async def rate_limit_middleware(request: Request, api_key: Optional[str] = None)
         # Log but don't crash the application
         logger.error(f"Error in rate limiting middleware: {str(e)}")
         # Still allow the request to continue
-        return 
+        return
+
+# API key validator dependency
+async def validate_api_key(request: Request, api_key: str = None):
+    """
+    Dependency for validating API keys and applying rate limiting.
+    To be used with the API route dependencies.
+    
+    Args:
+        request: The FastAPI request object
+        api_key: API key from X-API-Key header
+        
+    Returns:
+        The API key string if valid
+        
+    Raises:
+        HTTPException: When the API key is invalid or rate limited
+    """
+    # Get API key from header if not provided
+    if not api_key:
+        api_key = request.headers.get("X-API-Key")
+    
+    # Check if API key is required for this endpoint
+    if not api_key:
+        # For demo endpoints, use IP-based rate limiting
+        await rate_limit_middleware(request)
+        return None
+    
+    # Get database session
+    db = next(get_db())
+    
+    # Validate API key in database
+    db_api_key = db.query(DBAPIKey).filter(
+        DBAPIKey.key == api_key,
+        DBAPIKey.is_active == True
+    ).first()
+    
+    # Check if API key is valid
+    if not db_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "invalid_api_key",
+                "code": "INVALID_API_KEY",
+                "message": "Invalid API key. Please provide a valid API key in the X-API-Key header."
+            }
+        )
+    
+    # Update last used time
+    db_api_key.last_used = datetime.utcnow()
+    db.commit()
+    
+    # Apply rate limiting
+    await rate_limit_middleware(request, api_key, db)
+    
+    return api_key 

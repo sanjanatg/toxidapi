@@ -13,27 +13,39 @@
     "routes": [
         {
             "src": "/",
-            "dest": "app/static/index.html"
+            "dest": "app/main.py"
         },
         {
             "src": "/analyze",
-            "dest": "app/static/analyze.html"
+            "dest": "app/main.py"
         },
         {
             "src": "/docs",
-            "dest": "app/static/docs.html"
+            "dest": "app/main.py"
         },
         {
             "src": "/keys",
-            "dest": "app/static/keys.html"
+            "dest": "app/main.py"
         },
         {
             "src": "/version",
-            "dest": "app/static/version.html"
+            "dest": "app/main.py"
         },
         {
             "src": "/limits",
-            "dest": "app/static/limits.html"
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/signin",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/login",
+            "dest": "app/main.py"
+        },
+        {
+            "src": "/auth/(.*)",
+            "dest": "app/main.py"
         },
         {
             "src": "/static/(.*)",
@@ -41,11 +53,7 @@
         },
         {
             "src": "/api/v1/(.*)",
-            "dest": "app/main.py",
-            "status": 301,
-            "headers": {
-                "Location": "/api/v2/$1"
-            }
+            "dest": "app/main.py"
         },
         {
             "src": "/api/(.*)",
@@ -58,6 +66,9 @@
         "API_KEY_REQUIRED": "true",
         "RATE_LIMIT": "100",
         "PRO_RATE_LIMIT": "1000",
-        "RATE_WINDOW": "3600"
+        "RATE_WINDOW": "3600",
+        "DATABASE_URL": "${DATABASE_URL}",
+        "SECRET_KEY": "${SECRET_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
     }
 } 

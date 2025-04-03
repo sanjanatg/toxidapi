@@ -49,37 +49,79 @@ class GeminiAnalyzer:
         )
         
         # Define the prompt template for analysis
-        self.prompt_template = """You are a content moderation AI. Analyze the following text for toxicity, sentiment, and inappropriate content. You must detect ALL forms of profanity and toxic content, including obfuscated words.
+        self.prompt_template = """You are a comprehensive content analysis AI. Analyze the following text for toxicity, sentiment, readability, profanity, and sensitivity. You must detect ALL forms of problematic content, including obfuscated words.
 
 Text to analyze: "{text}"
 
-Return a JSON object with this exact structure (replace values in <> with actual values):
+Return a JSON object with this exact structure:
 {{
     "toxicity": {{
-        "score": <0.8>,
-        "is_toxic": <true>,
+        "score": <0.0-1.0>,
+        "is_toxic": <true/false>,
         "detailed_scores": {{
-            "toxicity": <0.8>,
-            "severe_toxicity": <0.6>,
-            "obscene": <0.7>,
-            "threat": <0.2>,
-            "insult": <0.8>,
-            "identity_hate": <0.1>
+            "toxicity": <0.0-1.0>,
+            "severe_toxicity": <0.0-1.0>,
+            "obscene": <0.0-1.0>,
+            "threat": <0.0-1.0>,
+            "insult": <0.0-1.0>,
+            "identity_hate": <0.0-1.0>
         }}
     }},
     "sentiment": {{
-        "score": <0.2>,
-        "label": <"NEGATIVE">
+        "score": <-1.0 to 1.0>,
+        "label": <"POSITIVE"/"NEGATIVE"/"NEUTRAL">,
+        "emotions": {{
+            "joy": <0.0-1.0>,
+            "sadness": <0.0-1.0>,
+            "anger": <0.0-1.0>,
+            "fear": <0.0-1.0>,
+            "surprise": <0.0-1.0>
+        }}
+    }},
+    "profanity": {{
+        "score": <0.0-1.0>,
+        "is_profane": <true/false>,
+        "severity": <"NONE"/"LOW"/"MEDIUM"/"HIGH">,
+        "categories": {{
+            "mild_profanity": <0.0-1.0>,
+            "strong_profanity": <0.0-1.0>,
+            "sexual_references": <0.0-1.0>,
+            "slurs": <0.0-1.0>
+        }}
+    }},
+    "sensitivity": {{
+        "score": <0.0-1.0>,
+        "is_sensitive": <true/false>,
+        "categories": {{
+            "political": <0.0-1.0>,
+            "religious": <0.0-1.0>,
+            "racial": <0.0-1.0>,
+            "gender": <0.0-1.0>,
+            "violence": <0.0-1.0>,
+            "self_harm": <0.0-1.0>
+        }}
+    }},
+    "readability": {{
+        "score": <0.0-1.0>,
+        "grade_level": <1-12>,
+        "difficulty": <"EASY"/"MEDIUM"/"DIFFICULT">,
+        "metrics": {{
+            "avg_word_length": <number>,
+            "avg_sentence_length": <number>,
+            "complex_word_percentage": <0.0-1.0>
+        }}
     }},
     "flagged_words": {{
-        "count": <3>,
-        "words": ["f*ck", "sh1t", "a$$holes"],
+        "count": <number>,
+        "words": [<word1>, <word2>, ...],
         "categories": {{
-            "profanity": ["f*ck", "sh1t"],
-            "insults": ["a$$holes"]
+            "profanity": [<words>],
+            "insults": [<words>],
+            "slurs": [<words>],
+            "other": [<words>]
         }},
-        "severity_score": <0.75>,
-        "is_severe": <true>
+        "severity_score": <0.0-1.0>,
+        "is_severe": <true/false>
     }}
 }}
 
@@ -89,6 +131,9 @@ Important rules:
 3. Consider ALL-CAPS and multiple punctuation (!!!) as anger indicators
 4. Include original obfuscated forms in flagged_words
 5. Set high severity for multiple profanities or aggressive context
+6. Carefully analyze for sensitive topics like politics, religion, race
+7. Evaluate readability using standard metrics (word/sentence length, complexity)
+8. For sentiment, identify underlying emotions beyond positive/negative
 
 Return ONLY valid JSON, no other text or explanation."""
         
@@ -177,8 +222,64 @@ Return ONLY valid JSON, no other text or explanation."""
         
         # Normalize sentiment
         result.setdefault("sentiment", {})
-        result["sentiment"].setdefault("score", 0.5)
-        result["sentiment"].setdefault("label", "NEUTRAL")
+        sentiment = result["sentiment"]
+        sentiment.setdefault("score", 0.0)
+        sentiment.setdefault("label", "NEUTRAL")
+        sentiment.setdefault("emotions", {})
+        
+        # Add emotions if not present
+        for emotion in ["joy", "sadness", "anger", "fear", "surprise"]:
+            sentiment["emotions"].setdefault(emotion, 0.0)
+        
+        # Normalize profanity
+        result.setdefault("profanity", {})
+        profanity = result["profanity"]
+        profanity.setdefault("score", 0.0)
+        profanity.setdefault("is_profane", False)
+        profanity.setdefault("severity", "NONE")
+        profanity.setdefault("categories", {})
+        
+        # Add profanity categories if not present
+        for category in ["mild_profanity", "strong_profanity", "sexual_references", "slurs"]:
+            profanity["categories"].setdefault(category, 0.0)
+        
+        # Update is_profane based on score
+        if profanity["score"] > 0.3:
+            profanity["is_profane"] = True
+            if profanity["score"] > 0.7:
+                profanity["severity"] = "HIGH"
+            elif profanity["score"] > 0.4:
+                profanity["severity"] = "MEDIUM"
+            else:
+                profanity["severity"] = "LOW"
+        
+        # Normalize sensitivity
+        result.setdefault("sensitivity", {})
+        sensitivity = result["sensitivity"]
+        sensitivity.setdefault("score", 0.0)
+        sensitivity.setdefault("is_sensitive", False)
+        sensitivity.setdefault("categories", {})
+        
+        # Add sensitivity categories if not present
+        for category in ["political", "religious", "racial", "gender", "violence", "self_harm"]:
+            sensitivity["categories"].setdefault(category, 0.0)
+            
+        # Update is_sensitive based on score
+        if sensitivity["score"] > 0.5 or any(score > 0.6 for score in sensitivity["categories"].values()):
+            sensitivity["is_sensitive"] = True
+        
+        # Normalize readability
+        result.setdefault("readability", {})
+        readability = result["readability"]
+        readability.setdefault("score", 0.5)
+        readability.setdefault("grade_level", 8)
+        readability.setdefault("difficulty", "MEDIUM")
+        readability.setdefault("metrics", {})
+        
+        # Add readability metrics if not present
+        readability["metrics"].setdefault("avg_word_length", 5.0)
+        readability["metrics"].setdefault("avg_sentence_length", 15.0)
+        readability["metrics"].setdefault("complex_word_percentage", 0.3)
         
         # Normalize flagged words
         result.setdefault("flagged_words", {})
@@ -192,7 +293,7 @@ Return ONLY valid JSON, no other text or explanation."""
         # Update severity based on content
         if flagged["count"] > 0:
             if not flagged["severity_score"]:
-                flagged["severity_score"] = toxicity["score"]
+                flagged["severity_score"] = max(profanity["score"], toxicity["score"])
             flagged["is_severe"] = flagged["severity_score"] > 0.5
     
     def _get_default_response(self) -> Dict[str, Any]:
@@ -211,8 +312,48 @@ Return ONLY valid JSON, no other text or explanation."""
                 }
             },
             "sentiment": {
+                "score": 0.0,
+                "label": "NEUTRAL",
+                "emotions": {
+                    "joy": 0.0,
+                    "sadness": 0.0,
+                    "anger": 0.0,
+                    "fear": 0.0,
+                    "surprise": 0.0
+                }
+            },
+            "profanity": {
+                "score": 0.0,
+                "is_profane": False,
+                "severity": "NONE",
+                "categories": {
+                    "mild_profanity": 0.0,
+                    "strong_profanity": 0.0,
+                    "sexual_references": 0.0,
+                    "slurs": 0.0
+                }
+            },
+            "sensitivity": {
+                "score": 0.0,
+                "is_sensitive": False,
+                "categories": {
+                    "political": 0.0,
+                    "religious": 0.0,
+                    "racial": 0.0,
+                    "gender": 0.0,
+                    "violence": 0.0,
+                    "self_harm": 0.0
+                }
+            },
+            "readability": {
                 "score": 0.5,
-                "label": "NEUTRAL"
+                "grade_level": 8,
+                "difficulty": "MEDIUM",
+                "metrics": {
+                    "avg_word_length": 5.0,
+                    "avg_sentence_length": 15.0,
+                    "complex_word_percentage": 0.3
+                }
             },
             "flagged_words": {
                 "count": 0,
