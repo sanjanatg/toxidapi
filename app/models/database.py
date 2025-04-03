@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, OperationalError, text
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.pool import NullPool

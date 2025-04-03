@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, List
 import uuid
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from passlib.context import CryptContext
 
 # Password hashing
@@ -46,29 +46,78 @@ class APIKey:
         self.requests_this_hour += 1
         self.last_used = datetime.utcnow()
 
-# Request/Response Models
-class UserCreate(BaseModel):
+# User models
+class UserBase(BaseModel):
     email: EmailStr
-    password: str
 
-class UserLogin(BaseModel):
-    email: EmailStr
+class UserCreate(UserBase):
     password: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "securepassword"
+            }
+        }
 
-class UserResponse(BaseModel):
+class UserLogin(UserBase):
+    password: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "securepassword"
+            }
+        }
+
+class UserResponse(UserBase):
     id: str
-    email: str
     tier: str
     created_at: datetime
-    api_keys: List[str]
+    api_keys: List[str] = []
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                "email": "user@example.com",
+                "tier": "free",
+                "created_at": "2023-01-01T00:00:00",
+                "api_keys": ["toxid_a1b2c3d4e5f6"]
+            }
+        }
 
+# API Key models
 class APIKeyCreate(BaseModel):
-    name: str = "Default"
+    name: str = Field(..., description="A friendly name for this API key")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "My App"
+            }
+        }
 
 class APIKeyResponse(BaseModel):
     id: str
     key: str
     name: str
     created_at: datetime
-    last_used: Optional[datetime]
-    requests_this_hour: int 
+    last_used: Optional[datetime] = None
+    requests_this_hour: int = 0
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                "key": "toxid_a1b2c3d4e5f6",
+                "name": "My App",
+                "created_at": "2023-01-01T00:00:00",
+                "last_used": "2023-01-01T01:00:00",
+                "requests_this_hour": 42
+            }
+        } 
