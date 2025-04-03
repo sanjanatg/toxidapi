@@ -13,6 +13,7 @@ import jwt
 from passlib.context import CryptContext
 import os
 import logging
+from sqlalchemy import inspect
 
 from app.models.database import get_db, DBUser, DBAPIKey
 from app.models.user import UserCreate, UserLogin, UserResponse, APIKeyCreate, APIKeyResponse
@@ -56,6 +57,20 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserResponse:
     """Register a new user"""
     try:
+        # First, ensure tables exist
+        try:
+            from app.models.database import Base
+            # Get the engine from the session
+            engine = db.get_bind()
+            inspector = inspect(engine)
+            # Check if tables exist
+            if "users" not in inspector.get_table_names():
+                logger.info("Creating database tables before registration")
+                Base.metadata.create_all(bind=engine)
+                logger.info("Tables created successfully")
+        except Exception as create_error:
+            logger.error(f"Error checking/creating tables: {str(create_error)}")
+        
         # Check if user already exists
         try:
             db_user = db.query(DBUser).filter(DBUser.email == user.email).first()
@@ -67,30 +82,44 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
                 )
         except Exception as query_error:
             # This could happen if the users table doesn't exist yet
-            logger.error(f"Error querying users table: {str(query_error)}")
             if "no such table: users" in str(query_error):
-                logger.info("Creating tables for SQLite database")
+                logger.error(f"Error querying users table: {str(query_error)}")
+                logger.info("Creating tables for SQLite database after query error")
                 try:
                     # Try to create tables if they don't exist
                     from app.models.database import Base
                     Base.metadata.create_all(bind=db.get_bind())
-                    logger.info("Tables created successfully")
+                    logger.info("Tables created successfully after error")
                 except Exception as create_error:
                     logger.error(f"Error creating tables: {str(create_error)}")
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Database setup error. Please try again later."
                     )
+            else:
+                # If it's some other error, re-raise
+                raise query_error
         
         # Create new user
         user_id = str(uuid.uuid4())
         logger.info(f"Creating new user with ID: {user_id} and email: {user.email}")
         
         try:
+            # Try to create a strong password hash safely
+            try:
+                hashed_password = get_password_hash(user.password)
+                logger.info("Password hashed successfully")
+            except Exception as hash_error:
+                logger.error(f"Password hashing error: {str(hash_error)}")
+                # Use a simple hash as fallback in emergencies
+                import hashlib
+                hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+                logger.warning("Using emergency fallback password hashing")
+            
             db_user = DBUser(
                 id=user_id,
                 email=user.email,
-                hashed_password=get_password_hash(user.password),
+                hashed_password=hashed_password,
                 created_at=datetime.utcnow(),
                 tier="free",
                 is_active=True
@@ -119,6 +148,33 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
         except Exception as db_error:
             logger.error(f"Database error during registration: {str(db_error)}")
             db.rollback()
+            
+            # Check for specific SQLite errors
+            if "no such table: users" in str(db_error):
+                # Table doesn't exist despite our checks - final attempt to create it
+                try:
+                    logger.warning("Final attempt to create tables after insert error")
+                    from app.models.database import Base
+                    Base.metadata.create_all(bind=db.get_bind())
+                    
+                    # Try the insert again
+                    db.add(db_user)
+                    db.commit()
+                    db.refresh(db_user)
+                    
+                    # Create default API key
+                    api_key = create_api_key(db_user.id, "Default", db)
+                    
+                    return UserResponse(
+                        id=db_user.id,
+                        email=db_user.email,
+                        tier=db_user.tier,
+                        created_at=db_user.created_at,
+                        api_keys=[api_key.key]
+                    )
+                except Exception as retry_error:
+                    logger.error(f"Final attempt failed: {str(retry_error)}")
+            
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error during registration: {str(db_error)}"
@@ -132,7 +188,11 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRespon
         import traceback
         logger.error(f"Stack trace: {traceback.format_exc()}")
         
-        db.rollback()
+        try:
+            db.rollback()
+        except:
+            pass
+            
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Registration failed. Please try again later."

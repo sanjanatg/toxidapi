@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, ForeignKey, inspect, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, scoped_session
 from sqlalchemy.pool import NullPool
 import os
 from datetime import datetime
@@ -9,21 +9,29 @@ import logging
 import time
 import json
 import re
+import sys
 
 # Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Check if we're running in a serverless environment
+IS_SERVERLESS = os.getenv("VERCEL") == "1" or "AWS_LAMBDA" in os.environ
+
 # Get database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./toxidapi.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:" if IS_SERVERLESS else "sqlite:///./toxidapi.db")
 
 # Check if the DATABASE_URL is a template variable (${...}) and handle it
 if re.match(r'^\${.*}$', DATABASE_URL):
     logger.warning(f"DATABASE_URL contains template variable: {DATABASE_URL}")
     logger.warning("This may indicate environment variables aren't properly configured")
-    # Use SQLite as fallback
-    DATABASE_URL = "sqlite:///./toxidapi.db"
-    logger.info(f"Using fallback database: {DATABASE_URL}")
+    # Always use in-memory SQLite for serverless environments
+    DATABASE_URL = "sqlite:///:memory:"
+    logger.info(f"Using in-memory SQLite database")
+elif IS_SERVERLESS and DATABASE_URL.startswith("sqlite:///") and not DATABASE_URL.startswith("sqlite:///:memory:"):
+    # Force in-memory SQLite for any file-based SQLite in serverless
+    logger.warning(f"Converting file-based SQLite to in-memory for serverless environment")
+    DATABASE_URL = "sqlite:///:memory:"
 else:
     logger.info(f"Database type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'unknown'}")
 
@@ -58,17 +66,44 @@ class DBAPIKey(Base):
     # Relationship with user
     user = relationship("DBUser", back_populates="api_keys")
 
-# Maximum retry attempts for database connection
-MAX_RETRIES = 3
-RETRY_DELAY = 1  # seconds
+# Store in-memory engine globally for serverless
+_engine = None
+_session_factory = None
+
+def get_global_engine():
+    """Get or create a global engine for in-memory SQLite."""
+    global _engine, _session_factory
+    
+    if _engine is None:
+        logger.info("Creating global in-memory SQLite engine")
+        _engine = create_engine(
+            "sqlite:///:memory:",
+            connect_args={"check_same_thread": False},
+            poolclass=NullPool
+        )
+        
+        # Create tables immediately
+        Base.metadata.create_all(bind=_engine)
+        logger.info("Created tables in global in-memory SQLite database")
+        
+        # Create session factory
+        _session_factory = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+    
+    return _engine
 
 # Function to create a fresh connection engine
 def create_db_engine():
     """Create a fresh database engine with NullPool for serverless"""
+    # For in-memory SQLite in serverless environment, use global engine
+    if DATABASE_URL == "sqlite:///:memory:" or DATABASE_URL.startswith("sqlite:///:memory:"):
+        return get_global_engine()
+    
     retry_count = 0
+    max_retries = 3
+    retry_delay = 1  # seconds
     last_error = None
     
-    while retry_count < MAX_RETRIES:
+    while retry_count < max_retries:
         try:
             # For PostgreSQL, use special parameters optimized for serverless
             connect_args = {}
@@ -107,74 +142,72 @@ def create_db_engine():
                 logger.error(f"Database connection test failed: {str(conn_error)}")
                 last_error = conn_error
                 retry_count += 1
-                if retry_count < MAX_RETRIES:
-                    logger.info(f"Retrying connection in {RETRY_DELAY} seconds... (Attempt {retry_count+1}/{MAX_RETRIES})")
-                    time.sleep(RETRY_DELAY)
+                if retry_count < max_retries:
+                    logger.info(f"Retrying connection in {retry_delay} seconds... (Attempt {retry_count+1}/{max_retries})")
+                    time.sleep(retry_delay)
                 continue
                 
         except Exception as e:
             logger.error(f"Error creating database engine: {str(e)}")
             last_error = e
             retry_count += 1
-            if retry_count < MAX_RETRIES:
-                logger.info(f"Retrying in {RETRY_DELAY} seconds... (Attempt {retry_count+1}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY)
+            if retry_count < max_retries:
+                logger.info(f"Retrying in {retry_delay} seconds... (Attempt {retry_count+1}/{max_retries})")
+                time.sleep(retry_delay)
             else:
                 break
     
-    # All attempts failed, fall back to SQLite
-    logger.error(f"All database connection attempts failed after {MAX_RETRIES} retries. Last error: {str(last_error)}")
+    # All attempts failed, fall back to in-memory SQLite
+    logger.error(f"All database connection attempts failed after {max_retries} retries. Last error: {str(last_error)}")
     logger.warning("Falling back to SQLite in-memory database")
-    sqlite_engine = create_engine("sqlite:///:memory:", 
-                        connect_args={"check_same_thread": False},
-                        poolclass=NullPool)
-    
-    # Create all tables in SQLite
-    try:
-        Base.metadata.create_all(bind=sqlite_engine)
-        logger.info("Created tables in SQLite fallback database")
-    except Exception as schema_error:
-        logger.error(f"Error creating schema in SQLite: {str(schema_error)}")
-    
-    return sqlite_engine
+    return get_global_engine()
 
 # Simple function to get a fresh session
 def get_db():
     """Get a fresh database session for each request"""
-    engine = None
+    global _session_factory
+    
     try:
-        # Create a new engine for each session in serverless environment
+        # For in-memory SQLite, use the global session factory
+        if DATABASE_URL == "sqlite:///:memory:" or DATABASE_URL.startswith("sqlite:///:memory:"):
+            if _session_factory is None:
+                # Initialize if not already done
+                get_global_engine()
+            
+            db = _session_factory()
+            try:
+                yield db
+            finally:
+                db.close()
+            return
+            
+        # For other databases, create a new engine for each session in serverless environment
         engine = create_db_engine()
         
         # Create a new session
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         db = SessionLocal()
         
+        # Verify tables exist before yielding session
+        inspector = inspect(engine)
+        if "users" not in inspector.get_table_names():
+            logger.warning("Tables not found in database, creating them now")
+            Base.metadata.create_all(bind=engine)
+        
         try:
             yield db
         finally:
             db.close()
-            if engine:
+            if engine and engine != _engine:  # Don't dispose global engine
                 engine.dispose()  # Explicitly close all connections
     except Exception as session_error:
         logger.error(f"Session error: {session_error}")
         # If we can't create a real DB session, create an in-memory one
+        engine = get_global_engine()  # Use global engine for consistency
+        
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        db = SessionLocal()
         try:
-            in_memory_engine = create_engine(
-                "sqlite:///:memory:", 
-                connect_args={"check_same_thread": False},
-                poolclass=NullPool
-            )
-            Base.metadata.create_all(bind=in_memory_engine)
-            logger.info("Created tables in emergency fallback SQLite database")
-            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=in_memory_engine)
-            db = SessionLocal()
-            try:
-                yield db
-            finally:
-                db.close()
-                in_memory_engine.dispose()
-        except Exception as fallback_error:
-            logger.critical(f"Critical fallback error: {str(fallback_error)}")
-            # At this point, we can't do much more
-            yield None 
+            yield db
+        finally:
+            db.close() 

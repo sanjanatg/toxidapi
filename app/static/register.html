@@ -274,73 +274,106 @@
             submitButton.textContent = 'Creating Account...';
             submitButton.disabled = true;
             
-            try {
-                console.log('Attempting registration with email:', email);
+            let attemptCount = 0;
+            const maxAttempts = 3;
+            let success = false;
+            
+            while (!success && attemptCount < maxAttempts) {
+                attemptCount++;
                 
-                const response = await fetch('/auth/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                if (attemptCount > 1) {
+                    showAlert(`Retrying registration (attempt ${attemptCount}/${maxAttempts})...`, 'error');
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between attempts
+                }
                 
-                console.log('Registration response status:', response.status);
-                
-                // Handle different response statuses
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Registration successful:', data);
+                try {
+                    console.log(`Registration attempt ${attemptCount} with email: ${email}`);
                     
-                    // Store user data in localStorage
-                    localStorage.setItem('user', JSON.stringify(data));
+                    const response = await fetch('/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
                     
-                    // Show success message
-                    showAlert('Account created successfully! Redirecting to login...', 'success');
+                    console.log('Registration response status:', response.status);
                     
-                    // Redirect to login page after a delay
-                    setTimeout(() => {
-                        window.location.href = '/keys';
-                    }, 1500);
-                    
-                } else {
-                    let errorMessage = 'Registration failed';
-                    
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.detail || 'Registration failed';
-                        console.warn('Registration error:', errorData);
-                    } catch (jsonError) {
-                        // If we can't parse JSON (e.g., HTML error page returned)
-                        console.error('Error parsing error response:', jsonError);
-                        if (response.status === 500) {
-                            errorMessage = 'Server error. Our team has been notified.';
-                        } else if (response.status === 400) {
-                            errorMessage = 'Invalid registration data. Please check your input.';
-                        } else if (response.status === 409) {
-                            errorMessage = 'Email already registered. Please use a different email.';
+                    // Handle different response statuses
+                    if (response.ok) {
+                        success = true;
+                        const data = await response.json();
+                        console.log('Registration successful:', data);
+                        
+                        // Store user data in localStorage
+                        localStorage.setItem('user', JSON.stringify(data));
+                        
+                        // Show success message
+                        showAlert('Account created successfully! Redirecting to API keys page...', 'success');
+                        
+                        // Redirect to API keys page after a delay
+                        setTimeout(() => {
+                            window.location.href = '/keys';
+                        }, 1500);
+                        
+                        break; // Exit the loop on success
+                        
+                    } else {
+                        let errorMessage = 'Registration failed';
+                        let shouldRetry = false;
+                        
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.detail || 'Registration failed';
+                            console.warn('Registration error:', errorData);
+                            
+                            // Check for errors that might benefit from retrying
+                            if (errorMessage.includes('no such table') || 
+                                errorMessage.includes('database error') ||
+                                errorMessage.includes('setup error') ||
+                                response.status === 500) {
+                                shouldRetry = attemptCount < maxAttempts;
+                            }
+                        } catch (jsonError) {
+                            // If we can't parse JSON (e.g., HTML error page returned)
+                            console.error('Error parsing error response:', jsonError);
+                            if (response.status === 500) {
+                                errorMessage = 'Server error. The database might be initializing.';
+                                shouldRetry = attemptCount < maxAttempts;
+                            } else if (response.status === 400) {
+                                errorMessage = 'Invalid registration data. Please check your input.';
+                            } else if (response.status === 409) {
+                                errorMessage = 'Email already registered. Please use a different email.';
+                            }
+                        }
+                        
+                        if (!shouldRetry) {
+                            // Show final error message
+                            showAlert(errorMessage, 'error');
+                            break;
+                        } else if (attemptCount >= maxAttempts) {
+                            showAlert(`${errorMessage} (Maximum retry attempts reached)`, 'error');
                         }
                     }
+                } catch (error) {
+                    console.error('Registration error:', error);
                     
-                    // Show error message
-                    showAlert(errorMessage, 'error');
+                    // More descriptive error messages based on error type
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        showAlert('Network error. Please check your internet connection.', 'error');
+                    } else if (error.name === 'SyntaxError') {
+                        showAlert('The server returned an invalid response. Try again later.', 'error');
+                    } else {
+                        showAlert('An unexpected error occurred. Please try again later.', 'error');
+                    }
+                    
+                    break; // Exit on network errors
                 }
-            } catch (error) {
-                console.error('Registration error:', error);
-                
-                // More descriptive error messages based on error type
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    showAlert('Network error. Please check your internet connection.', 'error');
-                } else if (error.name === 'SyntaxError') {
-                    showAlert('The server returned an invalid response. Try again later.', 'error');
-                } else {
-                    showAlert('An unexpected error occurred. Please try again later.', 'error');
-                }
-            } finally {
-                // Reset button state
-                submitButton.textContent = originalButtonText;
-                submitButton.disabled = false;
             }
+            
+            // Reset button state
+            submitButton.textContent = originalButtonText;
+            submitButton.disabled = false;
         });
         
         // Helper functions
