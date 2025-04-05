@@ -331,7 +331,7 @@
                     headers['Authorization'] = `Bearer ${accessToken}`;
                 }
                 
-                const response = await fetch('/api/v2/analyze', {
+                const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify({ text })

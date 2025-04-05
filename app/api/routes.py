@@ -207,6 +207,23 @@ async def analyze_endpoint(
             detail=f"An unexpected error occurred: {str(e)}"
         )
 
+# For backward compatibility - v2 endpoint that redirects to the main endpoint
+@router.post(
+    "/v2/analyze",
+    response_model=AnalysisResponse,
+    status_code=200,
+    include_in_schema=False
+)
+async def analyze_v2_endpoint(
+    request: TextRequest,
+    request_obj: Request,
+    response: Response,
+    api_key: str = Depends(validate_api_key)
+):
+    """Backward compatibility endpoint that redirects to the main analyze endpoint"""
+    logger.info("Request to /v2/analyze endpoint - redirecting to /analyze")
+    return await analyze_endpoint(request, request_obj, response, api_key)
+
 # Stats endpoint
 @router.get(
     "/stats", 

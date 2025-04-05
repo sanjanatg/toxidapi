@@ -68,6 +68,10 @@
             "dest": "app/main.py"
         },
         {
+            "src": "/api/v2/(.*)",
+            "dest": "app/main.py"
+        },
+        {
             "src": "/api/(.*)",
             "dest": "app/main.py"
         },
