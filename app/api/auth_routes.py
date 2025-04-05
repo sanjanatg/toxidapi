@@ -20,7 +20,9 @@ from app.models.user import UserCreate, UserLogin, UserResponse, APIKeyCreate, A
 from app.api.auth import (
     register_user, login_user, create_api_key, 
     get_user_api_keys, delete_api_key,
-    get_current_user_from_token
+    get_current_user_from_token,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES
 )
 
 # Configure logging
