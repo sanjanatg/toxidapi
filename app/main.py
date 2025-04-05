@@ -150,6 +150,7 @@ async def root():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ToxidAPI - Text Analysis with AI</title>
+        <link rel="icon" href="/static/ui/toxid-icon.svg" type="image/svg+xml">
         <style>
             /* Dark theme CSS */
             body {
@@ -395,6 +396,14 @@ async def swagger_ui_redirect():
 @app.get("/api.json", include_in_schema=False)
 async def api_spec():
     return RedirectResponse(url="/openapi.json")
+
+# Handle favicon.ico requests
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """
+    Redirect favicon.ico requests to the SVG icon
+    """
+    return RedirectResponse(url="/static/ui/toxid-icon.svg")
 
 # Update the __init__.py file to make imports easier
 if __name__ == "__main__":
