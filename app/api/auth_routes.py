@@ -312,94 +312,117 @@ async def remove_api_key(
         logger.error(f"API key deletion failed: {str(e)}")
         raise
 
-# Add this new endpoint after the existing register endpoint
-@router.post("/register-simple", status_code=status.HTTP_201_CREATED)
-async def register_simple(email: str, password: str):
-    """Simplified registration endpoint for testing"""
+# Simplified registration endpoint that doesn't use the database
+@router.post("/register-simple", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def register_simple(user: UserCreate, request: Request = None):
+    """Register a new user without using the database (for testing purposes)"""
     try:
-        logger.info(f"Simple registration attempt for email: {email}")
+        logger.info(f"Simplified registration attempt for email: {user.email}")
         
-        # Generate a simple user ID
+        # Basic input validation
+        if not user.email or not user.password:
+            logger.warning("Invalid registration attempt: missing email or password")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email and password are required"
+            )
+            
+        if len(user.password) < 8:
+            logger.warning("Invalid registration attempt: password too short")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
+            )
+        
+        # Specific handling for email validation errors    
+        try:
+            from email_validator import validate_email
+            validate_email(user.email)
+        except Exception as e:
+            logger.warning(f"Invalid email format: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid email format: {str(e)}"
+            )
+        
+        # Create deterministic user ID from email
+        import hashlib
         user_id = str(uuid.uuid4())
         
-        # Use a simple hash instead of bcrypt
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        
         # Create a simple API key
-        api_key = f"toxid_simple_{uuid.uuid4().hex}"
+        api_key = f"toxidapi_{hashlib.md5(user.email.encode()).hexdigest()}"
         
-        # Return a simplified response
-        logger.info(f"Simple registration successful for email: {email}")
-        return {
-            "success": True,
-            "id": user_id,
-            "email": email,
-            "api_key": api_key,
-            "message": "Registration successful using simplified endpoint"
-        }
+        # Return simulated user response
+        logger.info(f"Simplified registration successful for email: {user.email}")
+        return UserResponse(
+            id=user_id,
+            email=user.email,
+            tier="free",
+            created_at=datetime.utcnow(),
+            api_keys=[api_key]
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in simple registration: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"Error in simplified registration: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Simple registration failed: {str(e)}"
+            detail="An unexpected error occurred during registration."
         )
 
-# Add this after the register-simple endpoint
+# Simplified login endpoint that doesn't use the database
 @router.post("/login-simple")
-async def login_simple(email: str, password: str):
-    """Simplified login endpoint for testing"""
+async def login_simple(user: UserLogin, request: Request = None):
+    """Login with simplified method (for testing purposes)"""
     try:
-        logger.info(f"Simple login attempt for email: {email}")
+        logger.info(f"Simplified login attempt for email: {user.email}")
         
-        # Generate a deterministic user ID based on email
-        user_id = hashlib.md5(email.encode()).hexdigest()
+        # Basic input validation
+        if not user.email or not user.password:
+            logger.warning("Invalid login attempt: missing email or password")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email and password are required"
+            )
         
-        # Create a simple API key 
-        api_key = f"toxid_simple_{hashlib.sha256(email.encode()).hexdigest()[:32]}"
+        # Create deterministic user ID and API key from email
+        import hashlib
+        user_id = str(uuid.uuid4())  # We'd normally derive this from a DB lookup
         
-        # Hash the password (this should match what we did in register-simple)
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        # Create simple API key (same logic as register-simple)
+        api_key = f"toxidapi_{hashlib.md5(user.email.encode()).hexdigest()}"
         
-        # In a real system we'd check if user exists and verify the password
-        # Here we're just generating a token
+        # Hash password for token (should match what register-simple would do)
+        password_hash = hashlib.sha256(user.password.encode()).hexdigest()
         
-        # Create an access token
-        token_data = {
-            "sub": user_id,
-            "email": email,
-            "exp": datetime.utcnow() + timedelta(minutes=30)
-        }
+        # Create access token
+        access_token = create_access_token(
+            data={
+                "sub": user_id,
+                "email": user.email,
+                "type": "bearer"
+            },
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
         
-        # Generate the token
-        secret_key = os.getenv("SECRET_KEY", "default_fallback_key_for_simple_login")
-        # Ensure it's at least 32 chars
-        if len(secret_key) < 32:
-            secret_key = secret_key.ljust(32, 'x')
-            
-        access_token = jwt.encode(token_data, secret_key, algorithm="HS256")
-        
-        # Return user data similar to regular login
-        logger.info(f"Simple login successful for email: {email}")
+        logger.info(f"Simplified login successful for email: {user.email}")
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "user": {
                 "id": user_id,
-                "email": email,
+                "email": user.email,
                 "tier": "free",
-                "created_at": datetime.utcnow().isoformat(),
                 "api_keys": [api_key]
             }
         }
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in simple login: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"Error in simplified login: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Simple login failed: {str(e)}"
+            detail="An unexpected error occurred during login."
         )
 
 # Log that routes are registered

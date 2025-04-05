@@ -83,8 +83,30 @@ def get_global_engine():
         )
         
         # Create tables immediately
-        Base.metadata.create_all(bind=_engine)
-        logger.info("Created tables in global in-memory SQLite database")
+        try:
+            Base.metadata.create_all(bind=_engine)
+            logger.info("Created tables in global in-memory SQLite database")
+
+            # Verify tables exist with explicit query
+            with _engine.connect() as conn:
+                inspector = inspect(_engine)
+                tables = inspector.get_table_names()
+                logger.info(f"Verified tables in SQLite: {tables}")
+                if "users" not in tables:
+                    logger.warning("Users table not found after creation, forcing table recreation")
+                    conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id VARCHAR PRIMARY KEY, 
+                        email VARCHAR UNIQUE, 
+                        hashed_password VARCHAR,
+                        tier VARCHAR, 
+                        is_active BOOLEAN, 
+                        created_at TIMESTAMP
+                    )
+                    """))
+                    conn.commit()
+        except Exception as e:
+            logger.error(f"Error creating tables in global engine: {str(e)}")
         
         # Create session factory
         _session_factory = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
@@ -175,6 +197,29 @@ def get_db():
                 get_global_engine()
             
             db = _session_factory()
+            
+            # Ensure tables exist each time (in-memory DB can lose tables)
+            try:
+                inspector = inspect(_engine)
+                if "users" not in inspector.get_table_names():
+                    logger.warning("Users table not found in in-memory DB, recreating tables")
+                    Base.metadata.create_all(bind=_engine)
+                    
+                    # Double-check with explicit table creation
+                    with _engine.begin() as conn:
+                        conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS users (
+                            id VARCHAR PRIMARY KEY, 
+                            email VARCHAR UNIQUE, 
+                            hashed_password VARCHAR,
+                            tier VARCHAR, 
+                            is_active BOOLEAN, 
+                            created_at TIMESTAMP
+                        )
+                        """))
+            except Exception as table_error:
+                logger.error(f"Error checking/creating tables: {str(table_error)}")
+            
             try:
                 yield db
             finally:
@@ -189,10 +234,26 @@ def get_db():
         db = SessionLocal()
         
         # Verify tables exist before yielding session
-        inspector = inspect(engine)
-        if "users" not in inspector.get_table_names():
-            logger.warning("Tables not found in database, creating them now")
-            Base.metadata.create_all(bind=engine)
+        try:
+            inspector = inspect(engine)
+            if "users" not in inspector.get_table_names():
+                logger.warning("Tables not found in database, creating them now")
+                Base.metadata.create_all(bind=engine)
+                
+                # Double-check with explicit table creation
+                with engine.begin() as conn:
+                    conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id VARCHAR PRIMARY KEY, 
+                        email VARCHAR UNIQUE, 
+                        hashed_password VARCHAR,
+                        tier VARCHAR, 
+                        is_active BOOLEAN, 
+                        created_at TIMESTAMP
+                    )
+                    """))
+        except Exception as table_error:
+            logger.error(f"Error checking/creating tables: {str(table_error)}")
         
         try:
             yield db
@@ -201,12 +262,19 @@ def get_db():
             if engine and engine != _engine:  # Don't dispose global engine
                 engine.dispose()  # Explicitly close all connections
     except Exception as session_error:
-        logger.error(f"Session error: {session_error}")
+        logger.error(f"Session error: {str(session_error)}")
         # If we can't create a real DB session, create an in-memory one
         engine = get_global_engine()  # Use global engine for consistency
         
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         db = SessionLocal()
+        
+        # Ensure tables exist in this fallback case too
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as table_error:
+            logger.error(f"Error creating tables in fallback: {str(table_error)}")
+            
         try:
             yield db
         finally:

@@ -265,8 +265,12 @@
                     if (useSimpleEndpoint) {
                         // Try simplified login endpoint
                         console.log('Trying simplified login endpoint');
-                        response = await fetch(`/auth/login-simple?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-                            method: 'POST'
+                        response = await fetch('/auth/login-simple', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email, password })
                         });
                     } else {
                         // First try JSON login endpoint

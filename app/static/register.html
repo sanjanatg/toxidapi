@@ -306,8 +306,12 @@
                     
                     if (useSimpleEndpoint) {
                         // Use the simplified endpoint as a fallback
-                        response = await fetch(`/auth/register-simple?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`, {
-                            method: 'POST'
+                        response = await fetch('/auth/register-simple', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ email, password })
                         });
                     } else {
                         // Use the standard endpoint

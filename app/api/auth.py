@@ -21,8 +21,18 @@ from app.models.user import UserCreate, UserLogin, UserResponse, APIKeyCreate, A
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Configure password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Configure password hashing with error handling for bcrypt
+try:
+    # First try with bcrypt
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    # Test the context to ensure it works
+    test_hash = pwd_context.hash("test_password")
+    logger.info("bcrypt password hashing configured successfully")
+except Exception as e:
+    logger.warning(f"Error setting up bcrypt: {str(e)}. Falling back to sha256_crypt")
+    # Fallback to SHA256 if bcrypt has issues
+    pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+    logger.info("Using SHA256 password hashing as fallback")
 
 # Configure JWT token
 SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key_for_development_only")
