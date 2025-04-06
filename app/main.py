@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response, Depends
+from fastapi import FastAPI, Request, Response, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -7,6 +7,7 @@ import logging
 import time
 from pathlib import Path
 import os
+import httpx
 
 # Import the API routers
 from app.api.routes import router as api_router
@@ -408,4 +409,27 @@ async def favicon():
 # Update the __init__.py file to make imports easier
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+
+# Add a direct handler for /api/v2/analyze
+@app.post("/api/v2/analyze")
+async def api_v2_analyze_redirect(request: Request):
+    """
+    Legacy redirect for v2 API analyze endpoint
+    """
+    logger.info("Request to /api/v2/analyze - redirecting to /api/analyze")
+    body = await request.body()
+    headers = dict(request.headers)
+    
+    # Forward the request to the actual API endpoint
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{request.base_url}api/analyze",
+            content=body,
+            headers={k: v for k, v in headers.items() if k.lower() != 'host'}
+        )
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            headers=dict(response.headers)
+        ) 
