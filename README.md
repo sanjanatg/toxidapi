@@ -2,6 +2,8 @@
 
 A professional API for analyzing text toxicity, sentiment, and content moderation using Google's Gemini AI.
 
+![image](https://github.com/user-attachments/assets/3af2f980-9843-48a2-a628-162e4a17f10b)
+
 ## Features
 
 - **Toxicity Analysis**: Detect toxic content with detailed category scores
